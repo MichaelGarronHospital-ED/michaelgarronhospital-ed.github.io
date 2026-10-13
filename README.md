@@ -29,7 +29,8 @@ No framework, no build step, no dependencies. Open the files in any editor.
 | `index.html` | Page layout and heading. Also holds a plain-link fallback list for browsers with JavaScript off. |
 | `app.js` | Reads `tools.json` and builds the tiles. |
 | `styles.css` | Look and feel, including dark mode. |
-| `icons/` | One SVG icon per tool, plus the favicon. |
+| `404.html` | Shown for any mistyped or dead address on this domain, with a button back to the dashboard. |
+| `icons/` | One SVG icon per tool, the favicon, and `apple-touch-icon.png` (the icon when someone adds the dashboard to their phone's home screen; also the link-preview image). |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are. |
 
 ### Add a tool
@@ -72,6 +73,27 @@ GitHub Pages, from the `main` branch, root folder. Because the repo is named
 `michaelgarronhospital-ed.github.io`, it is served at the root of the org's
 address, and the tool repos are served beneath it (`/mgh-ed-hiring/`, …).
 Renaming this repo would move the dashboard off that address.
+
+## Old addresses
+
+Until 2026-10-13 the voting and hiring tools lived in one personal repo,
+`DrAlvinYang/ED-motion-voting` (served at `dralvinyang.github.io/ED-motion-voting/`).
+That repo is now archived and only redirects: `tools/motion-voting/…` →
+`mgh-ed-motion-voting/…`, `tools/interviews/…` → `mgh-ed-hiring/…`, anything
+else → this dashboard. Share only the new addresses.
+
+## Working on these repos locally
+
+Keep every repo of this org side by side in one parent folder (the maintainer
+uses `MGH-ED-Tools/`), one subfolder per repo, named exactly like the repo:
+
+```
+MGH-ED-Tools/
+  michaelgarronhospital-ed.github.io/   this dashboard
+  mgh-ed-motion-voting/
+  mgh-ed-hiring/
+  mgh-ed-patient-hub/
+```
 
 ## Ownership and handover
 

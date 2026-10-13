@@ -141,3 +141,16 @@ h1 {
   .tile { transition: none; }
   .tile:hover, .tile:active { transform: none; }
 }
+
+/* Pill button (used on the 404 page). */
+.button {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--focus);
+  color: #fff !important;
+  font-size: 17px;
+  font-weight: 500;
+  text-decoration: none !important;
+}
+.button:hover { filter: brightness(1.08); }
