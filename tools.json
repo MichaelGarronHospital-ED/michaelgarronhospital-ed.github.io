@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Motion Voting",
+    "description": "Live weighted voting on meeting motions.",
+    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/",
+    "icon": "icons/motion-voting.svg",
+    "color": "blue",
+    "access": "Pick your name",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting",
+    "owner": "Alvin Yang"
+  },
+  {
+    "name": "Physician Hiring",
+    "description": "Screen, schedule, panel, score and rank applicants.",
+    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/",
+    "icon": "icons/physician-hiring.svg",
+    "color": "indigo",
+    "access": "Committee code",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
+    "owner": "Alvin Yang"
+  },
+  {
+    "name": "Patient Hub",
+    "description": "Plain-language ED guide for patients and families.",
+    "url": "https://mgh-ed-patient-guide.pages.dev",
+    "icon": "icons/patient-hub.svg",
+    "color": "teal",
+    "access": "Public",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub",
+    "owner": "Alvin Yang"
+  }
+]

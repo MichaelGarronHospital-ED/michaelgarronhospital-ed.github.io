@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title>MGH ED Tools</title>
+  <meta name="description" content="Web tools built for the Michael Garron Hospital Emergency Department.">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <p class="eyebrow">Michael Garron Hospital · Emergency Department</p>
+      <h1>ED Tools</h1>
+      <p class="lede">Choose a tool. Each one has its own sign-in.</p>
+    </header>
+
+    <!-- Tiles are generated from tools.json by app.js. To add a tool, edit tools.json only. -->
+    <ul class="grid" id="tools" aria-label="Tools"></ul>
+
+    <noscript>
+      <ul class="grid">
+        <li><a class="tile" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/"><span class="name">Motion Voting</span></a></li>
+        <li><a class="tile" href="https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/"><span class="name">Physician Hiring</span></a></li>
+        <li><a class="tile" href="https://mgh-ed-patient-guide.pages.dev"><span class="name">Patient Hub</span></a></li>
+      </ul>
+    </noscript>
+
+    <footer class="foot">
+      <a href="https://github.com/MichaelGarronHospital-ED/michaelgarronhospital-ed.github.io">About these tools</a>
+    </footer>
+  </main>
+  <script src="app.js" defer></script>
+</body>
+</html>
