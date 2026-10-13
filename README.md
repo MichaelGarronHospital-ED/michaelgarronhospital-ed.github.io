@@ -97,8 +97,27 @@ MGH-ED-Tools/
 
 ## Ownership and handover
 
-- GitHub org: [MichaelGarronHospital-ED](https://github.com/MichaelGarronHospital-ED).
-  Keep at least two owners at all times.
-- Each tool's backend account (Firebase, Cloudflare) should also have at least
-  two people with owner access, so no tool depends on one person's account.
+The ED owns these tools through a **shared department mailbox**, not through any
+one person:
+
+**`MGHEmergencyDepartmentAdministration@tehn.ca`** ("MGH Emergency Department
+Administration"). Created by TEHN IT on 2026-10-13, authorized by the ED
+manager. Named ED staff have Read/Manage access; ask TEHN IT (Helpdesk) to add
+or remove people.
+
+That mailbox is the login for a department account on each service:
+
+| Service | Department account | Role |
+|---|---|---|
+| GitHub (this org) | `MGH-ED-Admin` | Owner |
+| Firebase: `ed-motion-voting-99b96` (voting), `mgh-ed-hiring` (hiring) | Google account on the mailbox | Owner |
+| Cloudflare | Account on the mailbox | Owner (Patient Hub's move into it is planned; until then Patient Hub is on the maintainer's personal account) |
+
+- Every department account has two-factor sign-in. Its password and backup
+  codes are kept by the ED, not by an individual.
+- Anyone who can open the mailbox can reset these passwords, so keep the
+  mailbox's member list short and current.
+- GitHub org owners today: `DrAlvinYang` (maintainer), `MGH-ED-Admin` (ED),
+  `MichaelGarronHospital-TEHN` (Communications). Keep at least two.
+- The org requires two-factor sign-in for everyone.
 - Current maintainer: Alvin Yang.
