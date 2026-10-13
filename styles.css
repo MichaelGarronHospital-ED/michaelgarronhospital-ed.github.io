@@ -121,7 +121,7 @@ h1 {
   .wrap { padding-top: 40px; }
   .head { margin-bottom: 28px; }
   .lede { font-size: 17px; }
-  .grid { gap: 12px; }
+  .grid { grid-template-columns: 1fr; gap: 12px; }
   .tile {
     display: grid;
     grid-template-columns: 52px 1fr;
