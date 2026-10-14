@@ -10,19 +10,7 @@
   --focus: #0071e3;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #000000;
-    --card: #1c1c1e;
-    --text: #f5f5f7;
-    --muted: #98989d;
-    --line: rgba(255, 255, 255, 0.08);
-    --shadow: none;
-    --shadow-hover: 0 0 0 1px rgba(255, 255, 255, 0.14);
-    --chip: rgba(255, 255, 255, 0.08);
-    --focus: #2997ff;
-  }
-}
+/* Light only, like the hiring tool, voting and the CPOE console: one look across the ED tools. */
 
 * { box-sizing: border-box; }
 
@@ -58,7 +46,8 @@ h1 {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  justify-content: center;
   gap: 20px;
 }
 
