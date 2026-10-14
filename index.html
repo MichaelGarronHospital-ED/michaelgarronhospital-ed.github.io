@@ -24,23 +24,23 @@
     <header class="head">
       <p class="eyebrow"><span class="nowrap">Michael Garron Hospital ·</span> <span class="nowrap">Emergency Department</span></p>
       <h1>ED Tools</h1>
-      <p class="lede">Choose a tool. Each one has its own <span class="nowrap">sign-in</span>.</p>
+      <p class="lede">Every Emergency Department tool, <span class="nowrap">in one place.</span></p>
     </header>
 
-    <!-- Tiles are generated from tools.json by app.js. To add a tool, edit tools.json only. -->
-    <ul class="grid" id="tools" aria-label="Tools"></ul>
+    <!-- Grouped cards are generated from tools.json by app.js. To add a tool, edit tools.json only. -->
+    <div id="tools"></div>
 
     <noscript>
-      <ul class="grid">
-        <li><a class="tile" href="https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports"><span class="name">ED Hub</span></a></li>
-        <li><a class="tile" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/"><span class="name">Motion Voting</span></a></li>
-        <li><a class="tile" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html"><span class="name">Motion Voting settings</span></a></li>
-        <li><a class="tile" href="https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/"><span class="name">Physician Hiring</span></a></li>
-        <li><a class="tile" href="https://mgh-ed-patient-hub.pages.dev"><span class="name">Patient Hub</span></a></li>
-        <li><a class="tile" href="https://mgh-ed-patient-hub.pages.dev/admin/"><span class="name">Patient Hub content editor</span></a></li>
-        <li><a class="tile" href="https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html"><span class="name">Patient Hub Map Studio</span></a></li>
-        <li><a class="tile" href="https://mgh-ed-patient-hub.pages.dev/internal/analytics"><span class="name">Patient Hub visit statistics</span></a></li>
-        <li><a class="tile" href="https://mghcpoe.pythonanywhere.com"><span class="name">CPOE Order Review</span></a></li>
+      <ul class="cards">
+        <li><a class="card fallback" href="https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports">ED Hub</a></li>
+        <li><a class="card fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/">Motion Voting</a></li>
+        <li><a class="card fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html">Motion Voting settings</a></li>
+        <li><a class="card fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/">Physician Hiring</a></li>
+        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev">Patient Hub</a></li>
+        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/">Patient Hub content editor</a></li>
+        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html">Patient Hub Map Studio</a></li>
+        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev/internal/analytics">Patient Hub visit statistics</a></li>
+        <li><a class="card fallback" href="https://mghcpoe.pythonanywhere.com">CPOE Order Review</a></li>
       </ul>
     </noscript>
 

@@ -1,16 +1,24 @@
+/* MGH ED Tools: the front page. Apple's grouped-list language (System Settings,
+   iOS): one calm column, small grey section titles, white cards with a single
+   hairline, quiet grey sign-in hints and a chevron, one blue for links. Light only,
+   like the hiring tool, voting and the CPOE console. */
 :root {
   --bg: #f5f5f7;
   --card: #ffffff;
   --text: #1d1d1f;
   --muted: #6e6e73;
-  --line: rgba(0, 0, 0, 0.06);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 16px 40px rgba(0, 0, 0, 0.10);
-  --chip: rgba(0, 0, 0, 0.05);
+  --faint: #6e6e73;   /* the lightest grey that keeps AA contrast on the page and the strip */
+  --line: rgba(0, 0, 0, 0.07);
+  --strip: #fafafc;
+  --link: #0066cc;
+  --link-press: #004f9e;
   --focus: #0071e3;
+  --shadow: 0 1px 1px rgba(0, 0, 0, 0.03), 0 2px 10px rgba(0, 0, 0, 0.035);
+  --shadow-hover: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 26px rgba(0, 0, 0, 0.07);
+  --radius: 18px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
 }
-
-/* Light only, like the hiring tool, voting and the CPOE console: one look across the ED tools. */
 
 * { box-sizing: border-box; }
 
@@ -18,72 +26,59 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--font);
+  font-size: 17px;
   line-height: 1.4;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .wrap {
-  max-width: 980px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: clamp(48px, 10vh, 112px) 16px 48px;
+  padding: clamp(56px, 11vh, 120px) 20px 56px;
 }
 
-.head { text-align: center; margin-bottom: clamp(32px, 6vh, 56px); text-wrap: balance; }
+/* ---- header ---------------------------------------------------------------- */
+.head { text-align: center; margin-bottom: clamp(36px, 6vh, 60px); text-wrap: balance; }
 .nowrap { white-space: nowrap; }
-.eyebrow { margin: 0 0 8px; font-size: 14px; font-weight: 500; color: var(--muted); }
+.eyebrow { margin: 0 0 10px; font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
 h1 {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(40px, 7vw, 56px);
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
-.lede { margin: 12px 0 0; font-size: 19px; color: var(--muted); }
+.lede { margin: 14px 0 0; font-size: 19px; color: var(--muted); letter-spacing: -0.012em; }
 
-.grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
+/* ---- groups ---------------------------------------------------------------- */
+.group + .group { margin-top: 34px; }
+.group-title {
+  margin: 0 0 10px 6px;
+  font-size: 13px; font-weight: 600; color: var(--faint);
+  text-transform: uppercase; letter-spacing: 0.06em;
 }
-.grid > li { flex: 0 1 300px; min-width: 220px; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 
-.tile {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  height: 100%;
-  padding: 28px;
+/* ---- a tool card ------------------------------------------------------------ */
+.card {
+  position: relative;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
-  color: inherit;
-  text-decoration: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
-.tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.tile:has(.main:active) { transform: scale(0.985); }
-/* the tool name is the card's main link, stretched over the whole card */
-.main { color: inherit; text-decoration: none; }
-.main::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.main:focus-visible { outline: none; }
-.tile:has(.main:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.card:hover { box-shadow: var(--shadow-hover); }
+.card:has(.main:active) { transform: scale(0.992); }
+.card-row { display: flex; align-items: center; gap: 16px; padding: 18px 18px 18px 20px; }
 
-.icon {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  margin-bottom: 20px;
-  border-radius: 14px;
-}
-.icon img { width: 30px; height: 30px; }
+.icon { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; }
+.icon img { width: 26px; height: 26px; }
 .icon.blue   { background: linear-gradient(160deg, #3a9bff, #0066d6); }
 .icon.indigo { background: linear-gradient(160deg, #7d7aff, #4b44d6); }
 .icon.teal   { background: linear-gradient(160deg, #3fd0c9, #0a9b9b); }
@@ -93,64 +88,73 @@ h1 {
 .icon.red    { background: linear-gradient(160deg, #ff6b61, #d63a2f); }
 .icon.gray   { background: linear-gradient(160deg, #a1a1a6, #6e6e73); }
 
-.name { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
-.desc { margin: 6px 0 20px; font-size: 15px; color: var(--muted); }
-.access {
-  margin-top: 0;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--chip);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
+.card-text { flex: 1; min-width: 0; }
+.name { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; }
+/* the tool name is the card's main link, stretched over the whole card */
+.main { color: inherit; text-decoration: none; }
+.main::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.main:focus-visible { outline: none; }
+.card:has(.main:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.desc { margin: 3px 0 0; font-size: 15px; color: var(--muted); line-height: 1.35; }
+
+.card-side { flex: none; display: flex; align-items: center; gap: 10px; color: var(--faint); }
+.access { font-size: 13px; color: var(--muted); }
+.access-inline { display: none; margin: 6px 0 0; }
+.chev {
+  width: 8px; height: 8px; margin-right: 4px;
+  border-right: 2px solid #c7c7cc; border-top: 2px solid #c7c7cc; transform: rotate(45deg);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
+.card:hover .chev { border-color: var(--faint); transform: translateX(2px) rotate(45deg); }
 
-/* staff links that belong to a tool (Patient Hub's editors): a hairline, a small
-   heading, and pill links that sit above the stretched main link */
-.related { position: relative; z-index: 1; width: 100%; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-.related-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px;
-  font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
-.related-access { font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; }
-.related-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 5px; }
-.related-links a { display: inline-flex; align-items: center; gap: 2px; padding: 5px 10px; border-radius: 999px;
-  background: #e8f1fd; color: #0060c0; font-size: 13px; font-weight: 500; text-decoration: none; transition: background .15s; }
-.related-links a::after { content: "\203A"; font-size: 15px; line-height: 1; margin-left: 2px; }
-.related-links a:hover { background: #dbeafe; }
-.related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.related-note { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+/* ---- staff links: a quiet strip at the foot of the card --------------------- */
+.related {
+  position: relative; z-index: 1;   /* above the stretched main link */
+  padding: 12px 20px 14px 84px;     /* aligned with the text, past the icon */
+  background: var(--strip);
+  border-top: 1px solid var(--line);
+}
+.related-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: 12px; }
+.related-label { font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
+.related-access { color: var(--faint); }
+.related-access::before { content: "·"; margin-right: 8px; }
+.related-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.related-links a {
+  display: inline-flex; align-items: center; gap: 3px; padding: 2px 0;
+  color: var(--link); font-size: 15px; font-weight: 500; text-decoration: none;
+}
+.related-links a::after { content: "\203A"; font-size: 17px; line-height: 1; transition: transform 0.15s ease; }
+.related-links a:hover { color: var(--link-press); }
+.related-links a:hover::after { transform: translateX(2px); }
+.related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.related-note { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
 
-.error { color: var(--muted); text-align: center; flex: 1 1 100%; }
+.error { color: var(--muted); text-align: center; }
 
+/* ---- footer ----------------------------------------------------------------- */
 .foot { margin-top: 56px; text-align: center; font-size: 13px; }
 .foot a { color: var(--muted); text-decoration: none; }
 .foot a:hover { text-decoration: underline; }
 
-/* Phones: compact rows, icon on the left, so every tool fits on one screen. */
+/* ---- phones ------------------------------------------------------------------ */
 @media (max-width: 599px) {
-  .wrap { padding-top: 40px; }
-  .head { margin-bottom: 28px; }
+  body { font-size: 16px; }
+  .wrap { padding-top: 44px; padding-left: 16px; padding-right: 16px; }
+  .head { margin-bottom: 30px; }
   .lede { font-size: 17px; }
-  .grid { gap: 12px; }
-  .grid > li { flex: 1 1 100%; min-width: 0; }
-  .tile {
-    display: grid;
-    grid-template-columns: 52px 1fr;
-    column-gap: 16px;
-    align-items: center;
-    padding: 16px;
-    border-radius: 18px;
-  }
-  .icon { grid-row: 1 / span 3; width: 52px; height: 52px; margin: 0; border-radius: 12px; align-self: start; }
-  .icon img { width: 28px; height: 28px; }
-  .name { font-size: 17px; }
-  .desc { margin: 2px 0 8px; font-size: 14px; }
-  .access { justify-self: start; margin-top: 0; }
-  .related { grid-column: 2; margin-top: 12px; padding-top: 10px; }
+  .group + .group { margin-top: 26px; }
+  .card-row { gap: 14px; padding: 15px 14px 15px 16px; align-items: flex-start; }
+  .icon { width: 44px; height: 44px; border-radius: 11px; }
+  .icon img { width: 24px; height: 24px; }
+  .card-side { align-self: center; }
+  .access-side { display: none; }
+  .access-inline { display: block; }
+  .related { padding: 11px 16px 13px 74px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tile { transition: none; }
-  .tile:hover, .tile:active { transform: none; }
+  .card, .chev, .related-links a::after { transition: none; }
+  .card:has(.main:active) { transform: none; }
 }
 
 /* Pill button (used on the 404 page). */
@@ -165,3 +169,6 @@ h1 {
   text-decoration: none !important;
 }
 .button:hover { filter: brightness(1.08); }
+
+/* No-JavaScript fallback list (index.html <noscript>) */
+.card.fallback { display: block; padding: 16px 20px; color: var(--text); text-decoration: none; font-weight: 600; }

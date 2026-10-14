@@ -1,10 +1,11 @@
-// Builds one tile per entry in tools.json. All tool details live in that file;
-// nothing here needs to change when a tool is added, renamed or moved.
+// Builds the page from tools.json. All tool details live in that file; nothing
+// here needs to change when a tool is added, renamed, regrouped or moved.
 //
-// A tile is a card whose tool name is the main link, stretched over the whole
-// card (CSS ::after), so a click anywhere opens the tool. An optional `related`
-// block adds a few staff links (e.g. Patient Hub's editors) that sit above the
-// stretched link: links cannot nest, so this is how one card holds several.
+// Tools are shown in groups (tools.json "group"; groups appear in the order they
+// are first used). Each tool is one card: its name is the main link, stretched
+// over the whole card (CSS ::after), so a click anywhere opens the tool. An
+// optional `related` block adds a few staff links in a strip at the bottom of the
+// card; they sit above the stretched link, because links cannot nest.
 
 const COLORS = ["blue", "indigo", "teal", "green", "orange", "pink", "red", "gray"];
 
@@ -17,7 +18,8 @@ function el(tag, className, text) {
 
 function relatedBlock(related) {
   const box = el("div", "related");
-  const head = el("p", "related-head", related.label || "Related");
+  const head = el("p", "related-head");
+  head.append(el("span", "related-label", related.label || "Related"));
   if (related.access) head.append(el("span", "related-access", related.access));
   const list = el("ul", "related-links");
   list.setAttribute("aria-label", related.label || "Related");
@@ -34,38 +36,74 @@ function relatedBlock(related) {
   return box;
 }
 
-function tile(tool) {
+function card(tool) {
   const li = el("li");
-  const card = el("article", "tile");
+  const card = el("article", "card");
 
+  const row = el("div", "card-row");
   const icon = el("span", "icon " + (COLORS.includes(tool.color) ? tool.color : "gray"));
   const img = document.createElement("img");
   img.src = tool.icon;
   img.alt = "";
   icon.append(img);
 
-  const name = el("h2", "name");
+  const text = el("div", "card-text");
+  const name = el("h3", "name");
   const main = el("a", "main", tool.name);
   main.href = tool.url;
   name.append(main);
+  text.append(name, el("p", "desc", tool.description));
+  // The sign-in hint: beside the chevron on wide screens, under the text on phones.
+  if (tool.access) text.append(el("p", "access access-inline", tool.access));
 
-  card.append(icon, name, el("p", "desc", tool.description));
-  if (tool.access) card.append(el("span", "access", tool.access));
+  const side = el("span", "card-side");
+  if (tool.access) {
+    const a = el("span", "access access-side", tool.access);
+    a.setAttribute("aria-hidden", "true");   // the inline copy is the one read aloud
+    side.append(a);
+  }
+  const chev = el("span", "chev");
+  chev.setAttribute("aria-hidden", "true");
+  side.append(chev);
+
+  row.append(icon, text, side);
+  card.append(row);
   if (tool.related && (tool.related.links || []).length) card.append(relatedBlock(tool.related));
   li.append(card);
   return li;
 }
 
+function render(tools) {
+  const root = document.getElementById("tools");
+  const groups = [];
+  for (const t of tools) {
+    const g = t.group || "Tools";
+    let entry = groups.find((x) => x.name === g);
+    if (!entry) { entry = { name: g, tools: [] }; groups.push(entry); }
+    entry.tools.push(t);
+  }
+  root.replaceChildren(...groups.map((g, i) => {
+    const section = el("section", "group");
+    const id = "group-" + i;
+    const h = el("h2", "group-title", g.name);
+    h.id = id;
+    const list = el("ul", "cards");
+    list.setAttribute("aria-labelledby", id);
+    list.append(...g.tools.map(card));
+    section.append(h, list);
+    return section;
+  }));
+}
+
 async function main() {
-  const list = document.getElementById("tools");
+  const root = document.getElementById("tools");
   try {
     const res = await fetch("tools.json", { cache: "no-cache" });
     if (!res.ok) throw new Error("tools.json returned " + res.status);
-    const tools = await res.json();
-    list.replaceChildren(...tools.map(tile));
+    render(await res.json());
   } catch (err) {
     console.error(err);
-    list.innerHTML = '<li class="error">The tool list could not be loaded. Please refresh the page.</li>';
+    root.innerHTML = '<p class="error">The tool list could not be loaded. Please refresh the page.</p>';
   }
 }
 

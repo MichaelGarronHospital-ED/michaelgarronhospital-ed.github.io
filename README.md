@@ -27,7 +27,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
 
 | File | What it does |
 |---|---|
-| `tools.json` | **The list of tools.** One entry per tile. This is the only file you edit to add, rename, move or remove a tool. |
+| `tools.json` | **The list of tools.** One entry per card; `group` sets the section heading it appears under (groups show in the order first used). This is the only file you edit to add, rename, move or remove a tool. |
 | `index.html` | Page layout and heading. Also holds a plain-link fallback list for browsers with JavaScript off. |
 | `app.js` | Reads `tools.json` and builds the tiles. |
 | `styles.css` | Look and feel, including dark mode. |
@@ -42,6 +42,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
    ```json
    {
      "name": "Tool Name",
+     "group": "For the ED team",
      "description": "One short line on what it does.",
      "url": "https://…/",
      "icon": "icons/tool-name.svg",

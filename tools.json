@@ -1,7 +1,8 @@
 [
   {
     "name": "ED Hub",
-    "description": "Physician resources and referral supports, on the hospital SharePoint.",
+    "group": "For the ED team",
+    "description": "Physician resources and referral supports.",
     "url": "https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports",
     "icon": "icons/ed-hub.svg",
     "color": "green",
@@ -11,7 +12,8 @@
   },
   {
     "name": "Motion Voting",
-    "description": "Live weighted voting on meeting motions.",
+    "group": "For the ED team",
+    "description": "Live weighted voting at department meetings.",
     "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/",
     "icon": "icons/motion-voting.svg",
     "color": "blue",
@@ -30,8 +32,20 @@
     }
   },
   {
+    "name": "CPOE Order Review",
+    "group": "For the ED team",
+    "description": "Review the ED quick orders before go-live.",
+    "url": "https://mghcpoe.pythonanywhere.com",
+    "icon": "icons/cpoe.svg",
+    "color": "orange",
+    "access": "Access code",
+    "repo": "private",
+    "owner": "Alvin Yang"
+  },
+  {
     "name": "Physician Hiring",
-    "description": "Screen, schedule, panel, score and rank applicants.",
+    "group": "For committees",
+    "description": "Screen, schedule, score and rank applicants.",
     "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/",
     "icon": "icons/physician-hiring.svg",
     "color": "indigo",
@@ -41,7 +55,8 @@
   },
   {
     "name": "Patient Hub",
-    "description": "Plain-language ED guide for patients and families.",
+    "group": "For patients and families",
+    "description": "A plain-language guide for patients and families.",
     "url": "https://mgh-ed-patient-hub.pages.dev",
     "icon": "icons/patient-hub.svg",
     "color": "teal",
@@ -71,15 +86,5 @@
       ],
       "note": "Editors sign in with GitHub. Visit statistics needs the access key."
     }
-  },
-  {
-    "name": "CPOE Order Review",
-    "description": "Review and comment on the ED quick orders before the Cerner go-live.",
-    "url": "https://mghcpoe.pythonanywhere.com",
-    "icon": "icons/cpoe.svg",
-    "color": "orange",
-    "access": "Access code",
-    "repo": "private",
-    "owner": "Alvin Yang"
   }
 ]
