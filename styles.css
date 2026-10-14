@@ -45,11 +45,12 @@ h1 {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 20px;
 }
+.grid > li { flex: 0 1 300px; min-width: 220px; }
 
 .tile {
   display: flex;
@@ -117,7 +118,7 @@ h1 {
 .related-links a:hover { background: #dbeafe; }
 .related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-.error { color: var(--muted); text-align: center; grid-column: 1 / -1; }
+.error { color: var(--muted); text-align: center; flex: 1 1 100%; }
 
 .foot { margin-top: 56px; text-align: center; font-size: 13px; }
 .foot a { color: var(--muted); text-decoration: none; }
@@ -128,7 +129,8 @@ h1 {
   .wrap { padding-top: 40px; }
   .head { margin-bottom: 28px; }
   .lede { font-size: 17px; }
-  .grid { grid-template-columns: 1fr; gap: 12px; }
+  .grid { gap: 12px; }
+  .grid > li { flex: 1 1 100%; min-width: 0; }
   .tile {
     display: grid;
     grid-template-columns: 52px 1fr;

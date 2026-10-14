@@ -14,6 +14,8 @@ and its own sign-in. The dashboard stores no passwords, no data and no logins.
 |---|---|---|---|---|---|
 | Motion Voting | ED physicians at meetings; admins run it from the admin page (linked on the same tile) | Voters pick their name; leadership uses a passcode | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
 | Physician Hiring | Hiring committee; applicants book times | Committee code; applicants use `book.html` | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/) | [mgh-ed-hiring](https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring) | Firebase (see that repo's README) |
+| ED Hub | ED physicians | Hospital Microsoft sign-in | [site](https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports) | none (SharePoint / Teams) | SharePoint site "ED Resources and Referral Supports" (hospital Microsoft 365) |
+| CPOE Order Review | ~70 physician, pharmacy, lab, DI and nursing reviewers before the Feb 2027 Cerner go-live | Access code | [site](https://mghcpoe.pythonanywhere.com) | private (still on the maintainer's account) | PythonAnywhere account "mghcpoe" |
 | Patient Hub | Patients and families (public); editors use the content editor and Map Studio (linked on the same tile) | None for patients; editors sign in with GitHub | [site](https://mgh-ed-patient-hub.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
 
 Each tool's own README explains how it works, how to deploy it and how to

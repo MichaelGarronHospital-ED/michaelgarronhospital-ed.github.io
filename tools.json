@@ -1,5 +1,15 @@
 [
   {
+    "name": "ED Hub",
+    "description": "Physician resources and referral supports, on the hospital SharePoint.",
+    "url": "https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports",
+    "icon": "icons/ed-hub.svg",
+    "color": "green",
+    "access": "Hospital sign-in",
+    "repo": "",
+    "owner": "Alvin Yang"
+  },
+  {
     "name": "Motion Voting",
     "description": "Live weighted voting on meeting motions.",
     "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/",
@@ -56,5 +66,15 @@
         }
       ]
     }
+  },
+  {
+    "name": "CPOE Order Review",
+    "description": "Review and comment on the ED quick orders before the Cerner go-live.",
+    "url": "https://mghcpoe.pythonanywhere.com",
+    "icon": "icons/cpoe.svg",
+    "color": "orange",
+    "access": "Access code",
+    "repo": "private",
+    "owner": "Alvin Yang"
   }
 ]
