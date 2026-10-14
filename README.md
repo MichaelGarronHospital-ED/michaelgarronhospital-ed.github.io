@@ -12,7 +12,7 @@ and its own sign-in. The dashboard stores no passwords, no data and no logins.
 
 | Tool | Who uses it | Sign-in | Live site | Repo | Data / backend |
 |---|---|---|---|---|---|
-| Motion Voting | ED physicians at meetings; leadership runs it from the console (linked on the same tile) | Voters pick their name; leadership uses a passcode | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
+| Motion Voting | ED physicians at meetings; admins run it from the admin page (linked on the same tile) | Voters pick their name; leadership uses a passcode | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
 | Physician Hiring | Hiring committee; applicants book times | Committee code; applicants use `book.html` | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/) | [mgh-ed-hiring](https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring) | Firebase (see that repo's README) |
 | Patient Hub | Patients and families (public); editors use the content editor and Map Studio (linked on the same tile) | None for patients; editors sign in with GitHub | [site](https://mgh-ed-patient-hub.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
 
@@ -69,7 +69,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
 
 - Link each tile to the tool's **public entry page**. A staff page may appear under
   `related` only if a sign-in or passcode protects it (Patient Hub's editors need GitHub
-  write access; the voting leadership console needs the leadership passcode, and Firebase
+  write access; the voting admin page needs the admin passcode, and Firebase
   refuses changes from anyone not signed in as leadership). Never rely on an unusual
   address alone: this repo and the tool repos are public.
 - Keep the dashboard free of secrets, sign-in logic and tool data.
