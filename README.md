@@ -128,3 +128,5 @@ That mailbox is the login for a department account on each service:
   `MichaelGarronHospital-TEHN` (Communications). Keep at least two.
 - The org requires two-factor sign-in for everyone.
 - Current maintainer: Alvin Yang.
+- Checked 2026-10-14: every repo in this org can be updated and deployed using only
+  the department login `MGH-ED-Admin` (no personal account involved).
