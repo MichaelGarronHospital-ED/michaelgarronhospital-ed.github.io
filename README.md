@@ -56,7 +56,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
    so a tool's editors are shown as part of it (Patient Hub uses this):
    ```json
    "related": {
-     "label": "For editors",
+     "label": "For admins",
      "access": "GitHub sign-in",
      "links": [ { "name": "Content editor", "url": "https://…/admin/" } ]
    }
