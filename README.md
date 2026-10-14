@@ -62,12 +62,15 @@ No framework, no build step, no dependencies. Open the files in any editor.
    }
    ```
    Clicking anywhere else on the tile still opens `url`.
-3. Add the tool to the `<noscript>` list in `index.html` and to the table above.
+3. Add the tool (and any `related` links) to the `<noscript>` list in `index.html` and to the table above.
 4. Commit to `main`. The site updates about a minute later.
 
 ### Rules
 
-- Link each tile to the tool's **public entry page only**, never to an admin page.
+- Link each tile to the tool's **public entry page**. A staff page may appear under
+  `related` only if a real sign-in protects it (Patient Hub's editors need GitHub write
+  access). Never link a page whose only protection is a hidden address (e.g. the voting
+  leadership page).
 - Keep the dashboard free of secrets, sign-in logic and tool data.
 
 ### Preview locally
