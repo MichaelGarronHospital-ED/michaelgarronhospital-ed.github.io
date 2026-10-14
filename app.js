@@ -29,6 +29,8 @@ function relatedBlock(related) {
     list.append(li);
   }
   box.append(head, list);
+  // Optional one-line caption, for when the links in a group need different sign-ins.
+  if (related.note) box.append(el("p", "related-note", related.note));
   return box;
 }
 

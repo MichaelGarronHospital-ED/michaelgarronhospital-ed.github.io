@@ -63,7 +63,8 @@ No framework, no build step, no dependencies. Open the files in any editor.
      "links": [ { "name": "Content editor", "url": "https://…/admin/" } ]
    }
    ```
-   Clicking anywhere else on the tile still opens `url`.
+   Clicking anywhere else on the tile still opens `url`. An optional `"note"` adds a
+   one-line caption under the links, for when they need different sign-ins.
 3. Add the tool (and any `related` links) to the `<noscript>` list in `index.html` and to the table above.
 4. Commit to `main`. The site updates about a minute later.
 

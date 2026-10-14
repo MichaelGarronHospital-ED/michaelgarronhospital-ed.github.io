@@ -50,7 +50,7 @@
     "owner": "Alvin Yang",
     "related": {
       "label": "For admins",
-      "access": "GitHub sign-in",
+      "access": "Sign-in needed",
       "links": [
         {
           "name": "Content editor",
@@ -63,8 +63,13 @@
         {
           "name": "Editing guide",
           "url": "https://mgh-ed-patient-hub.pages.dev/admin/guide.html"
+        },
+        {
+          "name": "Visit statistics",
+          "url": "https://mgh-ed-patient-hub.pages.dev/internal/analytics"
         }
-      ]
+      ],
+      "note": "Editors sign in with GitHub. Visit statistics needs the access key."
     }
   },
   {

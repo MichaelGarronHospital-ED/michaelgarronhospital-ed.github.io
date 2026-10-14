@@ -117,6 +117,7 @@ h1 {
 .related-links a::after { content: "\203A"; font-size: 15px; line-height: 1; margin-left: 2px; }
 .related-links a:hover { background: #dbeafe; }
 .related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.related-note { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
 
 .error { color: var(--muted); text-align: center; flex: 1 1 100%; }
 
