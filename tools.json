@@ -22,7 +22,7 @@
   {
     "name": "Patient Hub",
     "description": "Plain-language ED guide for patients and families.",
-    "url": "https://mgh-ed-patient-guide.pages.dev",
+    "url": "https://mgh-ed-patient-hub.pages.dev",
     "icon": "icons/patient-hub.svg",
     "color": "teal",
     "access": "Public",

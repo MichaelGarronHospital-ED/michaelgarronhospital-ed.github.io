@@ -14,7 +14,7 @@ and its own sign-in. The dashboard stores no passwords, no data and no logins.
 |---|---|---|---|---|---|
 | Motion Voting | ED physicians at meetings; leadership runs it | Voters pick their name; leadership uses a passcode | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
 | Physician Hiring | Hiring committee; applicants book times | Committee code; applicants use `book.html` | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/) | [mgh-ed-hiring](https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring) | Firebase (see that repo's README) |
-| Patient Hub | Patients and families (public) | None | [site](https://mgh-ed-patient-guide.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
+| Patient Hub | Patients and families (public) | None | [site](https://mgh-ed-patient-hub.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
 
 Each tool's own README explains how it works, how to deploy it and how to
 change its codes. Start there for anything inside a tool.
@@ -80,20 +80,27 @@ Until 2026-10-13 the voting and hiring tools lived in one personal repo,
 `DrAlvinYang/ED-motion-voting` (served at `dralvinyang.github.io/ED-motion-voting/`).
 That repo is now archived and only redirects: `tools/motion-voting/…` →
 `mgh-ed-motion-voting/…`, `tools/interviews/…` → `mgh-ed-hiring/…`, anything
-else → this dashboard. Share only the new addresses.
+else → this dashboard. Share only the new addresses. The old repo is kept as a
+redirect until **2027-06-30**; after that, old links and QR codes stop working.
 
 ## Working on these repos locally
 
 Keep every repo of this org side by side in one parent folder (the maintainer
-uses `MGH-ED-Tools/`), one subfolder per repo, named exactly like the repo:
+uses `MGH-ED-Tools/`), one subfolder per repo. The local folder names are short;
+the GitHub repo names stay as they are, because renaming a repo changes its live
+address:
 
 ```
 MGH-ED-Tools/
-  michaelgarronhospital-ed.github.io/   this dashboard
-  mgh-ed-motion-voting/
-  mgh-ed-hiring/
-  mgh-ed-patient-hub/
+  dashboard/            michaelgarronhospital-ed.github.io (this repo)
+  motion-voting/        mgh-ed-motion-voting
+  hiring-tool/          mgh-ed-hiring
+  patient-hub/          mgh-ed-patient-hub
+  patient-hub-notes/    mgh-ed-patient-hub-notes (private notes; not deployed)
 ```
+
+`MGH-ED-Tools/README.md` (not in any repo) has the full map of every tool,
+its accounts and how to deploy it.
 
 ## Ownership and handover
 
@@ -111,7 +118,7 @@ That mailbox is the login for a department account on each service:
 |---|---|---|
 | GitHub (this org) | `MGH-ED-Admin` | Owner |
 | Firebase: `ed-motion-voting-99b96` (voting), `mgh-ed-hiring` (hiring) | Google account on the mailbox | Owner |
-| Cloudflare | Account on the mailbox | Owner (Patient Hub's move into it is planned; until then Patient Hub is on the maintainer's personal account) |
+| Cloudflare | Account on the mailbox | Owner. Patient Hub runs here (project `mgh-ed-patient-hub`) since 2026-10-14. The old address `mgh-ed-patient-guide.pages.dev` only redirects and is due to be retired around 2027-01-14. |
 
 - Every department account has two-factor sign-in. Its password and backup
   codes are kept by the ED, not by an individual.
