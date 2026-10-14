@@ -7,7 +7,17 @@
     "color": "blue",
     "access": "Pick your name",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting",
-    "owner": "Alvin Yang"
+    "owner": "Alvin Yang",
+    "related": {
+      "label": "For leadership",
+      "access": "Passcode",
+      "links": [
+        {
+          "name": "Leadership console",
+          "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html"
+        }
+      ]
+    }
   },
   {
     "name": "Physician Hiring",
