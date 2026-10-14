@@ -97,11 +97,8 @@ h1 {
 .card:has(.main:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
 .desc { margin: 3px 0 0; font-size: 15px; color: var(--muted); line-height: 1.35; }
 
-.card-side { flex: none; display: flex; align-items: center; gap: 10px; color: var(--faint); }
-.access { font-size: 13px; color: var(--muted); }
-.access-inline { display: none; margin: 6px 0 0; }
 .chev {
-  width: 8px; height: 8px; margin-right: 4px;
+  flex: none; width: 8px; height: 8px; margin-right: 6px;
   border-right: 2px solid #c7c7cc; border-top: 2px solid #c7c7cc; transform: rotate(45deg);
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
@@ -114,10 +111,7 @@ h1 {
   background: var(--strip);
   border-top: 1px solid var(--line);
 }
-.related-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: 12px; }
-.related-label { font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
-.related-access { color: var(--faint); }
-.related-access::before { content: "·"; margin-right: 8px; }
+.related-head { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
 .related-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .related-links a {
   display: inline-flex; align-items: center; gap: 3px; padding: 2px 0;
@@ -127,7 +121,6 @@ h1 {
 .related-links a:hover { color: var(--link-press); }
 .related-links a:hover::after { transform: translateX(2px); }
 .related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
-.related-note { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
 
 .error { color: var(--muted); text-align: center; }
 
@@ -146,9 +139,7 @@ h1 {
   .card-row { gap: 14px; padding: 15px 14px 15px 16px; align-items: flex-start; }
   .icon { width: 44px; height: 44px; border-radius: 11px; }
   .icon img { width: 24px; height: 24px; }
-  .card-side { align-self: center; }
-  .access-side { display: none; }
-  .access-inline { display: block; }
+  .chev { align-self: center; }
   .related { padding: 11px 16px 13px 74px; }
 }
 

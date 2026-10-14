@@ -18,9 +18,7 @@ function el(tag, className, text) {
 
 function relatedBlock(related) {
   const box = el("div", "related");
-  const head = el("p", "related-head");
-  head.append(el("span", "related-label", related.label || "Related"));
-  if (related.access) head.append(el("span", "related-access", related.access));
+  const head = el("p", "related-head", related.label || "Related");
   const list = el("ul", "related-links");
   list.setAttribute("aria-label", related.label || "Related");
   for (const link of related.links || []) {
@@ -31,8 +29,6 @@ function relatedBlock(related) {
     list.append(li);
   }
   box.append(head, list);
-  // Optional one-line caption, for when the links in a group need different sign-ins.
-  if (related.note) box.append(el("p", "related-note", related.note));
   return box;
 }
 
@@ -53,20 +49,10 @@ function card(tool) {
   main.href = tool.url;
   name.append(main);
   text.append(name, el("p", "desc", tool.description));
-  // The sign-in hint: beside the chevron on wide screens, under the text on phones.
-  if (tool.access) text.append(el("p", "access access-inline", tool.access));
-
-  const side = el("span", "card-side");
-  if (tool.access) {
-    const a = el("span", "access access-side", tool.access);
-    a.setAttribute("aria-hidden", "true");   // the inline copy is the one read aloud
-    side.append(a);
-  }
   const chev = el("span", "chev");
   chev.setAttribute("aria-hidden", "true");
-  side.append(chev);
 
-  row.append(icon, text, side);
+  row.append(icon, text, chev);
   card.append(row);
   if (tool.related && (tool.related.links || []).length) card.append(relatedBlock(tool.related));
   li.append(card);

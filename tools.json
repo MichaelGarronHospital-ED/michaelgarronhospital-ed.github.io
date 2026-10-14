@@ -6,7 +6,6 @@
     "url": "https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports",
     "icon": "icons/ed-hub.svg",
     "color": "green",
-    "access": "Hospital sign-in",
     "repo": "",
     "owner": "Alvin Yang"
   },
@@ -17,12 +16,10 @@
     "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/",
     "icon": "icons/motion-voting.svg",
     "color": "blue",
-    "access": "Pick your name",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting",
     "owner": "Alvin Yang",
     "related": {
       "label": "For admins",
-      "access": "Passcode",
       "links": [
         {
           "name": "Settings",
@@ -38,7 +35,6 @@
     "url": "https://mghcpoe.pythonanywhere.com",
     "icon": "icons/cpoe.svg",
     "color": "orange",
-    "access": "Access code",
     "repo": "private",
     "owner": "Alvin Yang"
   },
@@ -49,7 +45,6 @@
     "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/",
     "icon": "icons/physician-hiring.svg",
     "color": "indigo",
-    "access": "Committee code",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
     "owner": "Alvin Yang"
   },
@@ -60,12 +55,10 @@
     "url": "https://mgh-ed-patient-hub.pages.dev",
     "icon": "icons/patient-hub.svg",
     "color": "teal",
-    "access": "Public",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub",
     "owner": "Alvin Yang",
     "related": {
       "label": "For admins",
-      "access": "Sign-in needed",
       "links": [
         {
           "name": "Content editor",
@@ -83,8 +76,7 @@
           "name": "Visit statistics",
           "url": "https://mgh-ed-patient-hub.pages.dev/internal/analytics"
         }
-      ],
-      "note": "Editors sign in with GitHub. Visit statistics needs the access key."
+      ]
     }
   }
 ]

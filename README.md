@@ -47,25 +47,21 @@ No framework, no build step, no dependencies. Open the files in any editor.
      "url": "https://…/",
      "icon": "icons/tool-name.svg",
      "color": "green",
-     "access": "Committee code",
      "repo": "https://github.com/MichaelGarronHospital-ED/…",
      "owner": "Name"
    }
    ```
    `color` is one of: blue, indigo, teal, green, orange, pink, red, gray.
-   `access` is a short hint shown on the tile. **Never put a password or code here** — this repo is public.
 
    Optional `related` adds a few staff links inside the same tile, under a hairline,
    so a tool's editors are shown as part of it (Patient Hub uses this):
    ```json
    "related": {
      "label": "For admins",
-     "access": "GitHub sign-in",
      "links": [ { "name": "Content editor", "url": "https://…/admin/" } ]
    }
    ```
-   Clicking anywhere else on the tile still opens `url`. An optional `"note"` adds a
-   one-line caption under the links, for when they need different sign-ins.
+   Clicking anywhere else on the card still opens `url`.
 3. Add the tool (and any `related` links) to the `<noscript>` list in `index.html` and to the table above.
 4. Commit to `main`. The site updates about a minute later.
 
