@@ -14,7 +14,7 @@ and its own sign-in. The dashboard stores no passwords, no data and no logins.
 |---|---|---|---|---|---|
 | Motion Voting | ED physicians at meetings; leadership runs it | Voters pick their name; leadership uses a passcode | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
 | Physician Hiring | Hiring committee; applicants book times | Committee code; applicants use `book.html` | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/) | [mgh-ed-hiring](https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring) | Firebase (see that repo's README) |
-| Patient Hub | Patients and families (public) | None | [site](https://mgh-ed-patient-hub.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
+| Patient Hub | Patients and families (public); editors use the content editor and Map Studio (linked on the same tile) | None for patients; editors sign in with GitHub | [site](https://mgh-ed-patient-hub.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
 
 Each tool's own README explains how it works, how to deploy it and how to
 change its codes. Start there for anything inside a tool.
@@ -51,6 +51,17 @@ No framework, no build step, no dependencies. Open the files in any editor.
    ```
    `color` is one of: blue, indigo, teal, green, orange, pink, red, gray.
    `access` is a short hint shown on the tile. **Never put a password or code here** — this repo is public.
+
+   Optional `related` adds a few staff links inside the same tile, under a hairline,
+   so a tool's editors are shown as part of it (Patient Hub uses this):
+   ```json
+   "related": {
+     "label": "For editors",
+     "access": "GitHub sign-in",
+     "links": [ { "name": "Content editor", "url": "https://…/admin/" } ]
+   }
+   ```
+   Clicking anywhere else on the tile still opens `url`.
 3. Add the tool to the `<noscript>` list in `index.html` and to the table above.
 4. Commit to `main`. The site updates about a minute later.
 

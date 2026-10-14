@@ -1,37 +1,56 @@
 // Builds one tile per entry in tools.json. All tool details live in that file;
 // nothing here needs to change when a tool is added, renamed or moved.
+//
+// A tile is a card whose tool name is the main link, stretched over the whole
+// card (CSS ::after), so a click anywhere opens the tool. An optional `related`
+// block adds a few staff links (e.g. Patient Hub's editors) that sit above the
+// stretched link: links cannot nest, so this is how one card holds several.
 
 const COLORS = ["blue", "indigo", "teal", "green", "orange", "pink", "red", "gray"];
 
-function tile(tool) {
-  const li = document.createElement("li");
-  const a = document.createElement("a");
-  a.className = "tile";
-  a.href = tool.url;
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
+}
 
-  const icon = document.createElement("span");
-  icon.className = "icon " + (COLORS.includes(tool.color) ? tool.color : "gray");
+function relatedBlock(related) {
+  const box = el("div", "related");
+  const head = el("p", "related-head", related.label || "Related");
+  if (related.access) head.append(el("span", "related-access", related.access));
+  const list = el("ul", "related-links");
+  list.setAttribute("aria-label", related.label || "Related");
+  for (const link of related.links || []) {
+    const li = el("li");
+    const a = el("a", null, link.name);
+    a.href = link.url;
+    li.append(a);
+    list.append(li);
+  }
+  box.append(head, list);
+  return box;
+}
+
+function tile(tool) {
+  const li = el("li");
+  const card = el("article", "tile");
+
+  const icon = el("span", "icon " + (COLORS.includes(tool.color) ? tool.color : "gray"));
   const img = document.createElement("img");
   img.src = tool.icon;
   img.alt = "";
   icon.append(img);
 
-  const name = document.createElement("span");
-  name.className = "name";
-  name.textContent = tool.name;
+  const name = el("h2", "name");
+  const main = el("a", "main", tool.name);
+  main.href = tool.url;
+  name.append(main);
 
-  const desc = document.createElement("span");
-  desc.className = "desc";
-  desc.textContent = tool.description;
-
-  a.append(icon, name, desc);
-  if (tool.access) {
-    const access = document.createElement("span");
-    access.className = "access";
-    access.textContent = tool.access;
-    a.append(access);
-  }
-  li.append(a);
+  card.append(icon, name, el("p", "desc", tool.description));
+  if (tool.access) card.append(el("span", "access", tool.access));
+  if (tool.related && (tool.related.links || []).length) card.append(relatedBlock(tool.related));
+  li.append(card);
   return li;
 }
 

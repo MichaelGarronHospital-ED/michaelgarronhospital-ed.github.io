@@ -46,7 +46,7 @@ h1 {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
   justify-content: center;
   gap: 20px;
 }
@@ -64,10 +64,15 @@ h1 {
   color: inherit;
   text-decoration: none;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
 }
 .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-.tile:active { transform: scale(0.985); }
-.tile:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.tile:has(.main:active) { transform: scale(0.985); }
+/* the tool name is the card's main link, stretched over the whole card */
+.main { color: inherit; text-decoration: none; }
+.main::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.main:focus-visible { outline: none; }
+.tile:has(.main:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
 
 .icon {
   display: grid;
@@ -87,7 +92,7 @@ h1 {
 .icon.red    { background: linear-gradient(160deg, #ff6b61, #d63a2f); }
 .icon.gray   { background: linear-gradient(160deg, #a1a1a6, #6e6e73); }
 
-.name { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+.name { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; }
 .desc { margin: 6px 0 20px; font-size: 15px; color: var(--muted); }
 .access {
   margin-top: auto;
@@ -98,6 +103,19 @@ h1 {
   font-weight: 500;
   color: var(--muted);
 }
+
+/* staff links that belong to a tool (Patient Hub's editors): a hairline, a small
+   heading, and pill links that sit above the stretched main link */
+.related { position: relative; z-index: 1; width: 100%; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.related-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
+.related-access { font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.related-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 5px; }
+.related-links a { display: inline-flex; align-items: center; gap: 2px; padding: 5px 10px; border-radius: 999px;
+  background: #e8f1fd; color: #0060c0; font-size: 13px; font-weight: 500; text-decoration: none; transition: background .15s; }
+.related-links a::after { content: "\203A"; font-size: 15px; line-height: 1; margin-left: 2px; }
+.related-links a:hover { background: #dbeafe; }
+.related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 .error { color: var(--muted); text-align: center; grid-column: 1 / -1; }
 
@@ -124,6 +142,7 @@ h1 {
   .name { font-size: 17px; }
   .desc { margin: 2px 0 8px; font-size: 14px; }
   .access { justify-self: start; margin-top: 0; }
+  .related { grid-column: 2; margin-top: 12px; padding-top: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

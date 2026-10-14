@@ -27,6 +27,24 @@
     "color": "teal",
     "access": "Public",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub",
-    "owner": "Alvin Yang"
+    "owner": "Alvin Yang",
+    "related": {
+      "label": "For editors",
+      "access": "GitHub sign-in",
+      "links": [
+        {
+          "name": "Content editor",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/"
+        },
+        {
+          "name": "Map Studio",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html"
+        },
+        {
+          "name": "Editing guide",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/guide.html"
+        }
+      ]
+    }
   }
 ]
