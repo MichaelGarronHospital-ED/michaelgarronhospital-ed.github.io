@@ -69,8 +69,9 @@ No framework, no build step, no dependencies. Open the files in any editor.
 ### Rules
 
 - Link each tile to the tool's **public entry page**. A staff page may appear under
-  `related` only if a sign-in or passcode protects it (Patient Hub's editors need GitHub
-  write access; the voting admin page needs the admin passcode, and Firebase
+  `related` only if a sign-in or password protects it (Patient Hub's editors need GitHub
+  write access; the voting admin page and Patient Hub statistics need the Leadership
+  password, and Firebase
   refuses changes from anyone not signed in as leadership). Never rely on an unusual
   address alone: this repo and the tool repos are public.
 - Keep the dashboard free of secrets, sign-in logic and tool data.

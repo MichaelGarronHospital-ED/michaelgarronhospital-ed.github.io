@@ -30,6 +30,7 @@ Ruleset "Protect main" blocks force-pushes and branch deletion only.
 
 ## Rules
 
-- Public repo: never put a password, code or admin link in it.
+- Public repo: never put a password or code in it. Links to staff pages are fine only when a
+  password or sign-in protects the page (Alvin, 2026-10-15); see README "How this site works".
 - Never rename this repo (it would move the dashboard off the org root address).
 - Local folder is `MGH-ED-Tools/dashboard`; see `../README.md` for the whole set of tools.
