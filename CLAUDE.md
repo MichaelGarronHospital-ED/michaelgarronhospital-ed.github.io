@@ -11,6 +11,12 @@ Live at https://michaelgarronhospital-ed.github.io/ (this repo's name makes it t
 - Add, rename or remove a tool: edit `tools.json`, the `<noscript>` list in `index.html`,
   and the table in `README.md`.
 
+## Look
+
+`shared/ed-ui.css` is the master copy of the shared ED look (tokens and `ed-` classes);
+`index.html` and `404.html` load it before `styles.css`. Read its header before changing it:
+copies live in the other tool repos and must stay identical.
+
 ## Deploy
 
 GitHub Pages from `main`, root folder. A push to `main` is live about a minute later.

@@ -1,165 +1,153 @@
-/* MGH ED Tools: the front page. Apple's grouped-list language (System Settings,
-   iOS): one calm column, small grey section titles, white cards with a single
-   hairline, quiet grey sign-in hints and a chevron, one blue for links. Light only,
-   like the hiring tool, voting and the CPOE console. */
-:root {
-  --bg: #f5f5f7;
-  --card: #ffffff;
-  --text: #1d1d1f;
-  --muted: #6e6e73;
-  --faint: #6e6e73;   /* the lightest grey that keeps AA contrast on the page and the strip */
-  --line: rgba(0, 0, 0, 0.07);
-  --strip: #fafafc;
-  --link: #0066cc;
-  --link-press: #004f9e;
-  --focus: #0071e3;
-  --shadow: 0 1px 1px rgba(0, 0, 0, 0.03), 0 2px 10px rgba(0, 0, 0, 0.035);
-  --shadow-hover: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 26px rgba(0, 0, 0, 0.07);
-  --radius: 18px;
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
-}
+/* MGH ED Tools: the front page. Uses the shared ED look (shared/ed-ui.css, loaded
+   first): the phone's own font, one blue accent for things you can press, AAA text
+   colours, light and dark following the device, print always light.
+
+   Layout follows iPhone Settings: a large bold title, then one grouped list per
+   section. Each section has a small sentence-case label above one inset card; each
+   tool is a row in that card (32px icon tile, name, one grey line, chevron), with
+   separators inset to the text. Only --ed-* tokens are used for colour, except the
+   icon tile fills below, which are fixed so the white icons read the same in both
+   themes (white on every tile is 7:1 or better). */
 
 * { box-sizing: border-box; }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 17px;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+body { margin: 0; }
 
 .wrap {
-  max-width: 720px;
+  max-width: var(--ed-maxw-narrow);
   margin: 0 auto;
-  padding: clamp(56px, 11vh, 120px) 20px 56px;
+  padding: 48px max(var(--ed-gutter), env(safe-area-inset-right)) 48px max(var(--ed-gutter), env(safe-area-inset-left));
 }
+
+.nowrap { white-space: nowrap; }
 
 /* ---- header ---------------------------------------------------------------- */
-.head { text-align: center; margin-bottom: clamp(36px, 6vh, 60px); text-wrap: balance; }
-.nowrap { white-space: nowrap; }
-.eyebrow { margin: 0 0 10px; font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
-h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(40px, 7vw, 56px);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+.head { margin-bottom: 32px; }
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 16px;
+  font-size: var(--ed-text-sm); font-weight: 600; line-height: 1.3; color: var(--ed-ink-2);
 }
-.lede { margin: 14px 0 0; font-size: 19px; color: var(--muted); letter-spacing: -0.012em; }
+.head h1 { font-size: clamp(34px, 6vw, 48px); line-height: 1.08; }
+.lede { margin: 10px 0 0; color: var(--ed-ink-2); text-wrap: balance; }
 
 /* ---- groups ---------------------------------------------------------------- */
-.group + .group { margin-top: 34px; }
+.group + .group { margin-top: 28px; }
 .group-title {
-  margin: 0 0 10px 6px;
-  font-size: 13px; font-weight: 600; color: var(--faint);
-  text-transform: uppercase; letter-spacing: 0.06em;
+  margin: 0 0 8px; padding-inline: 4px;
+  font-size: var(--ed-text-sm); font-weight: 600; line-height: 1.3; color: var(--ed-ink-2);
 }
-.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 
-/* ---- a tool card ------------------------------------------------------------ */
-.card {
-  position: relative;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+/* One inset card per group; each tool is a row inside it. */
+.cards {
+  list-style: none; margin: 0; padding: 0;
+  background: var(--ed-surface);
+  border-radius: var(--ed-r-lg);
+  box-shadow: var(--ed-shadow);
   overflow: hidden;
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
-.card:hover { box-shadow: var(--shadow-hover); }
-.card:has(.main:active) { transform: scale(0.992); }
-.card-row { display: flex; align-items: center; gap: 16px; padding: 18px 18px 18px 20px; }
+.cards > li { position: relative; }
+/* separator inset to the text: 16px padding + 32px tile + 14px gap */
+.cards > li + li::before {
+  content: ""; position: absolute; top: 0; right: 0; left: var(--row-inset, 62px); z-index: 2;
+  border-top: 1px solid var(--ed-line-soft);
+}
 
-.icon { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; }
-.icon img { width: 26px; height: 26px; }
-.icon.blue   { background: linear-gradient(160deg, #3a9bff, #0066d6); }
-.icon.indigo { background: linear-gradient(160deg, #7d7aff, #4b44d6); }
-.icon.teal   { background: linear-gradient(160deg, #3fd0c9, #0a9b9b); }
-.icon.green  { background: linear-gradient(160deg, #4cd964, #1e9e3a); }
-.icon.orange { background: linear-gradient(160deg, #ffad42, #f07800); }
-.icon.pink   { background: linear-gradient(160deg, #ff6b9a, #d6336c); }
-.icon.red    { background: linear-gradient(160deg, #ff6b61, #d63a2f); }
-.icon.gray   { background: linear-gradient(160deg, #a1a1a6, #6e6e73); }
+/* ---- a tool row ------------------------------------------------------------- */
+.card { position: relative; transition: background-color 0.15s ease; }
+.card:hover { background: color-mix(in srgb, var(--ed-surface) 97%, var(--ed-ink)); }
+.card-row { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px; }
+
+.icon {
+  flex: none; display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: var(--ed-r-xs);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.icon img { display: block; width: 20px; height: 20px; }
+.icon.blue   { background: #0052a3; }
+.icon.indigo { background: #3f3db8; }
+.icon.teal   { background: #006064; }
+.icon.green  { background: #0e5e27; }
+.icon.orange { background: #9a3600; }
+.icon.pink   { background: #a3195b; }
+.icon.red    { background: #9c000d; }
+.icon.gray   { background: #4f4f54; }
 
 .card-text { flex: 1; min-width: 0; }
-.name { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; }
-/* the tool name is the card's main link, stretched over the whole card */
+.name { margin: 0; font-size: var(--ed-text); font-weight: 600; line-height: 1.3; }
+/* the tool name is the row's main link, stretched over the whole row */
 .main { color: inherit; text-decoration: none; }
-.main::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.main::after { content: ""; position: absolute; inset: 0; }
 .main:focus-visible { outline: none; }
-.card:has(.main:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
-.desc { margin: 3px 0 0; font-size: 15px; color: var(--muted); line-height: 1.35; }
+.card:has(.main:focus-visible) { box-shadow: inset 0 0 0 3px var(--ed-accent); }
+.desc { margin: 2px 0 0; font-size: var(--ed-text-sm); line-height: 1.35; color: var(--ed-ink-2); }
 
 .chev {
-  flex: none; width: 8px; height: 8px; margin-right: 6px;
-  border-right: 2px solid #c7c7cc; border-top: 2px solid #c7c7cc; transform: rotate(45deg);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  flex: none; width: 9px; height: 9px; margin-right: 4px;
+  border-right: 2px solid var(--ed-ink-2); border-top: 2px solid var(--ed-ink-2);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
 }
-.card:hover .chev { border-color: var(--faint); transform: translateX(2px) rotate(45deg); }
+.card:hover .chev { transform: translateX(2px) rotate(45deg); }
 
-/* ---- staff links: a quiet strip at the foot of the card --------------------- */
+/* ---- staff links: one quiet line under the tool, aligned with its text ------ */
 .related {
   position: relative; z-index: 1;   /* above the stretched main link */
-  padding: 12px 20px 14px 84px;     /* aligned with the text, past the icon */
-  background: var(--strip);
-  border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; column-gap: 16px;
+  margin-top: -4px;
+  padding: 0 16px 2px var(--row-inset, 62px);
 }
-.related-head { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
-.related-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.related-head { flex-basis: 100%; margin: 0; font-size: var(--ed-text-sm); line-height: 1.3; color: var(--ed-ink-2); }
+.related-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; column-gap: 16px; }
 .related-links a {
-  display: inline-flex; align-items: center; gap: 3px; padding: 2px 0;
-  color: var(--link); font-size: 15px; font-weight: 500; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 3px; min-height: var(--ed-tap);
+  color: var(--ed-accent); font-size: var(--ed-text-sm); font-weight: 500; text-decoration: none;
 }
 .related-links a::after { content: "\203A"; font-size: 17px; line-height: 1; transition: transform 0.15s ease; }
-.related-links a:hover { color: var(--link-press); }
+.related-links a:hover { text-decoration: underline; }
 .related-links a:hover::after { transform: translateX(2px); }
-.related-links a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.related-links a:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 4px; }
 
-.error { color: var(--muted); text-align: center; }
+.error { color: var(--ed-ink-2); text-align: center; }
 
 /* ---- footer ----------------------------------------------------------------- */
-.foot { margin-top: 56px; text-align: center; font-size: 13px; }
-.foot a { color: var(--muted); text-decoration: none; }
-.foot a:hover { text-decoration: underline; }
+.foot { margin: 40px 0 0; text-align: center; font-size: var(--ed-text-sm); }
+.foot a:not(.ed-btn) {
+  display: inline-flex; align-items: center; min-height: var(--ed-tap); padding: 0 8px;
+  color: var(--ed-accent); text-decoration: none;
+}
+.foot a:not(.ed-btn):hover { text-decoration: underline; }
+.foot a:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 999px; }
+
+/* No-JavaScript fallback list (index.html <noscript>): plain rows, no icons. */
+.cards.plain { --row-inset: 16px; }
+.fallback {
+  display: flex; align-items: center; min-height: 52px; padding: 10px 16px;
+  color: var(--ed-ink); font-weight: 600; text-decoration: none;
+}
+.fallback:hover { background: color-mix(in srgb, var(--ed-surface) 97%, var(--ed-ink)); }
+.fallback:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--ed-accent); }
+
+/* ---- dark: a faint edge so the dark tiles stand off the dark card ----------- */
+@media (prefers-color-scheme: dark) {
+  .icon { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+}
 
 /* ---- phones ------------------------------------------------------------------ */
 @media (max-width: 599px) {
-  body { font-size: 16px; }
-  .wrap { padding-top: 44px; padding-left: 16px; padding-right: 16px; }
-  .head { margin-bottom: 30px; }
-  .lede { font-size: 17px; }
-  .group + .group { margin-top: 26px; }
-  .card-row { gap: 14px; padding: 15px 14px 15px 16px; align-items: flex-start; }
-  .icon { width: 44px; height: 44px; border-radius: 11px; }
-  .icon img { width: 24px; height: 24px; }
-  .chev { align-self: center; }
-  .related { padding: 11px 16px 13px 74px; }
+  .wrap { padding-top: 28px; }
+  .head { margin-bottom: 28px; }
+}
+
+/* ---- print: always light (tokens switch in ed-ui.css), no hover or chevrons -- */
+@media print {
+  .wrap { padding-top: 0; }
+  .cards { box-shadow: none; border: 1px solid var(--ed-line); }
+  .card:hover { background: none; }
+  .chev, .foot { display: none; }
+  .icon { box-shadow: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .card, .chev, .related-links a::after { transition: none; }
-  .card:has(.main:active) { transform: none; }
 }
-
-/* Pill button (used on the 404 page). */
-.button {
-  display: inline-block;
-  padding: 12px 22px;
-  border-radius: 999px;
-  background: var(--focus);
-  color: #fff !important;
-  font-size: 17px;
-  font-weight: 500;
-  text-decoration: none !important;
-}
-.button:hover { filter: brightness(1.08); }
-
-/* No-JavaScript fallback list (index.html <noscript>) */
-.card.fallback { display: block; padding: 16px 20px; color: var(--text); text-decoration: none; font-weight: 600; }

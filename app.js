@@ -2,10 +2,11 @@
 // here needs to change when a tool is added, renamed, regrouped or moved.
 //
 // Tools are shown in groups (tools.json "group"; groups appear in the order they
-// are first used). Each tool is one card: its name is the main link, stretched
-// over the whole card (CSS ::after), so a click anywhere opens the tool. An
-// optional `related` block adds a few staff links in a strip at the bottom of the
-// card; they sit above the stretched link, because links cannot nest.
+// are first used); each group is one grouped list and each tool is one row in it.
+// The tool's name is the main link, stretched over the whole row (CSS ::after), so
+// a click anywhere opens the tool. An optional `related` block adds a few staff
+// links on a quiet line under the row's text; they sit above the stretched link,
+// because links cannot nest.
 
 const COLORS = ["blue", "indigo", "teal", "green", "orange", "pink", "red", "gray"];
 
