@@ -3,44 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="light dark">
   <meta name="robots" content="noindex">
   <title>MGH ED Tools</title>
   <meta name="description" content="Web tools built for the Michael Garron Hospital Emergency Department.">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="ED Tools">
-  <meta name="theme-color" content="#f5f5f7">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <!-- Link preview when the address is pasted into email, Teams or a chat. -->
   <meta property="og:title" content="MGH ED Tools">
   <meta property="og:description" content="Web tools for the Michael Garron Hospital Emergency Department.">
   <meta property="og:url" content="https://michaelgarronhospital-ed.github.io/">
   <meta property="og:image" content="https://michaelgarronhospital-ed.github.io/icons/apple-touch-icon.png">
   <meta property="og:type" content="website">
+  <!-- Shared ED look first (tokens and ed- classes), then this page's own layout. -->
+  <link rel="stylesheet" href="shared/ed-ui.css">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="ed-page">
   <main class="wrap">
     <header class="head">
-      <p class="eyebrow"><span class="nowrap">Michael Garron Hospital ·</span> <span class="nowrap">Emergency Department</span></p>
-      <h1>ED Tools</h1>
+      <p class="brand"><span class="ed-badge" aria-hidden="true">ED</span><span><span class="nowrap">Michael Garron Hospital ·</span> <span class="nowrap">Emergency Department</span></span></p>
+      <h1 class="ed-title">ED Tools</h1>
       <p class="lede">Every Emergency Department tool, <span class="nowrap">in one place.</span></p>
     </header>
 
-    <!-- Grouped cards are generated from tools.json by app.js. To add a tool, edit tools.json only. -->
+    <!-- Grouped lists are generated from tools.json by app.js. To add a tool, edit tools.json only. -->
     <div id="tools"></div>
 
     <noscript>
-      <ul class="cards">
-        <li><a class="card fallback" href="https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports">ED Hub</a></li>
-        <li><a class="card fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/">Motion Voting</a></li>
-        <li><a class="card fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html">Motion Voting settings</a></li>
-        <li><a class="card fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/">Physician Hiring</a></li>
-        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev">Patient Hub</a></li>
-        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/">Patient Hub content editor</a></li>
-        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html">Patient Hub Map Studio</a></li>
-        <li><a class="card fallback" href="https://mgh-ed-patient-hub.pages.dev/internal/analytics">Patient Hub visit statistics</a></li>
-        <li><a class="card fallback" href="https://mghcpoe.pythonanywhere.com">CPOE Order Review</a></li>
+      <ul class="cards plain">
+        <li><a class="fallback" href="https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports">ED Hub</a></li>
+        <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/">Motion Voting</a></li>
+        <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html">Motion Voting settings</a></li>
+        <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/">Physician Hiring</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev">Patient Hub</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/">Patient Hub content editor</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html">Patient Hub Map Studio</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/internal/analytics">Patient Hub visit statistics</a></li>
+        <li><a class="fallback" href="https://mghcpoe.pythonanywhere.com">CPOE Order Review</a></li>
       </ul>
     </noscript>
 

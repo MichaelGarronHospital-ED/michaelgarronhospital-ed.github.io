@@ -1,4 +1,4 @@
-# MGH ED Tools — dashboard
+# MGH ED Tools: dashboard
 
 The front page for every web tool built for the Michael Garron Hospital
 Emergency Department. It is a page of tiles; each tile links to one tool.
@@ -30,7 +30,8 @@ No framework, no build step, no dependencies. Open the files in any editor.
 | `tools.json` | **The list of tools.** One entry per card; `group` sets the section heading it appears under (groups show in the order first used). This is the only file you edit to add, rename, move or remove a tool. |
 | `index.html` | Page layout and heading. Also holds a plain-link fallback list for browsers with JavaScript off. |
 | `app.js` | Reads `tools.json` and builds the tiles. |
-| `styles.css` | Look and feel, including dark mode. |
+| `shared/ed-ui.css` | The shared look for every ED staff tool (colours, font, buttons, lists; light and dark follow the device). This repo holds the master copy; the other tools keep exact copies. Do not edit it here only: see its header. |
+| `styles.css` | This page's own layout, built on the shared look. |
 | `404.html` | Shown for any mistyped or dead address on this domain, with a button back to the dashboard. |
 | `icons/` | One SVG icon per tool, the favicon, and `apple-touch-icon.png` (the icon when someone adds the dashboard to their phone's home screen; also the link-preview image). |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are. |
@@ -53,7 +54,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
    ```
    `color` is one of: blue, indigo, teal, green, orange, pink, red, gray.
 
-   Optional `related` adds a few staff links inside the same tile, under a hairline,
+   Optional `related` adds a few staff links inside the same row, on a quiet line under its text,
    so a tool's editors are shown as part of it (Patient Hub uses this):
    ```json
    "related": {
@@ -61,7 +62,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
      "links": [ { "name": "Content editor", "url": "https://…/admin/" } ]
    }
    ```
-   Clicking anywhere else on the card still opens `url`.
+   Clicking anywhere else on the row still opens `url`.
 3. Add the tool (and any `related` links) to the `<noscript>` list in `index.html` and to the table above.
 4. Commit to `main`. The site updates about a minute later.
 
