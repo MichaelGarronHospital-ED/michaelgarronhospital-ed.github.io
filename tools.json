@@ -29,6 +29,16 @@
     }
   },
   {
+    "name": "Physician Hiring",
+    "group": "For the ED team",
+    "description": "Screen, schedule, score and rank applicants.",
+    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/",
+    "icon": "icons/physician-hiring.svg",
+    "color": "indigo",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
+    "owner": "Alvin Yang"
+  },
+  {
     "name": "CPOE Order Review",
     "group": "For the ED team",
     "description": "Review the ED quick orders before go-live.",
@@ -36,16 +46,6 @@
     "icon": "icons/cpoe.svg",
     "color": "orange",
     "repo": "private",
-    "owner": "Alvin Yang"
-  },
-  {
-    "name": "Physician Hiring",
-    "group": "For committees",
-    "description": "Screen, schedule, score and rank applicants.",
-    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/",
-    "icon": "icons/physician-hiring.svg",
-    "color": "indigo",
-    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
     "owner": "Alvin Yang"
   },
   {
