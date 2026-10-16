@@ -1,7 +1,10 @@
 """Tests for scripts/check_tools.py. Standard library only; no network.
 
 Each test copies the dashboard into a temporary folder and changes the copy, so the
-real files are never touched.
+real files are never touched. The tool list in the copy is the frozen fixture in
+tests/fixtures (five tools, their icons, a small README), with the plain list in
+index.html rewritten from it, so adding or renaming a real tool never breaks a test.
+The real app.js, index.html and 404.html are used, because those are what is checked.
 
     python3 -m unittest discover -s tests -p 'test_check_tools.py'
 """
@@ -14,6 +17,7 @@ import os
 import re
 import shutil
 import socket
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -23,24 +27,28 @@ from pathlib import Path
 from unittest import mock
 
 REPO = Path(__file__).resolve().parent.parent
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 sys.path.insert(0, str(REPO / "scripts"))
 import check_tools  # noqa: E402
 
 SCOPE = ("For tool problems only. Not for medical questions. Please do not write names, "
          "health card numbers or health details.")
-COPY = ["tools.json", "index.html", "404.html", "app.js", "README.md", "icons"]
+FIXTURE_TOOLS = json.loads((FIXTURES / "tools.json").read_text())
+FIXTURE_COUNT = len(FIXTURE_TOOLS)
 
 
 class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="dash-check-"))
         self.addCleanup(shutil.rmtree, self.tmp, True)
-        for name in COPY:
-            src = REPO / name
-            if src.is_dir():
-                shutil.copytree(src, self.tmp / name)
-            else:
-                shutil.copy2(src, self.tmp / name)
+        for name in ("index.html", "404.html", "app.js"):          # the real page files
+            shutil.copy2(REPO / name, self.tmp / name)
+        shutil.copy2(FIXTURES / "tools.json", self.tmp / "tools.json")
+        shutil.copy2(FIXTURES / "README.md", self.tmp / "README.md")
+        shutil.copytree(FIXTURES / "icons", self.tmp / "icons")
+        report, _ = check_tools.run(self.tmp, write=True)         # plain list made from the fixture
+        if report.errors:
+            raise AssertionError("the fixture does not pass the check: %s" % report.errors)
 
     # helpers
     def tools(self):
@@ -90,9 +98,44 @@ class Base(unittest.TestCase):
 
 class TestRealRepo(Base):
     def test_01_real_repo_passes(self):
-        report, count = check_tools.run(REPO)
+        # allow_stale: on a branch the plain list may lag behind tools.json until main
+        report, count = check_tools.run(REPO, allow_stale=True)
         self.assertEqual(report.errors, [])
-        self.assertEqual(count, 5)
+        self.assertEqual(count, len(json.loads((REPO / "tools.json").read_text())))
+
+    def test_01a_fixture_passes(self):
+        report, count = self.run_check()
+        self.assertEqual((report.errors, report.warnings), ([], []))
+        self.assertEqual(count, FIXTURE_COUNT)
+
+    @unittest.skipIf(os.environ.get("DASHBOARD_NESTED_TEST"), "already inside the copy")
+    def test_01b_a_sixth_tool_keeps_everything_green(self):
+        """Adding a tool must not turn the GitHub check red, on a branch or on main."""
+        repo = self.tmp / "repo"
+        shutil.copytree(REPO, repo, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        tools = json.loads((repo / "tools.json").read_text())
+        tools.append({"name": "Shift Swap Test", "group": "For the ED team", "description": "Swap shifts.",
+                      "url": "https://example.org/shift-swap/", "icon": tools[0]["icon"], "color": "green",
+                      "owner": "ED Administration", "repo": ""})
+        (repo / "tools.json").write_text(json.dumps(tools, indent=2))
+        env = dict(os.environ, DASHBOARD_NESTED_TEST="1", GITHUB_STEP_SUMMARY=str(self.tmp / "summary.md"))
+        env.pop("EXPECTED_SAVE_BRANCH", None)
+
+        def sh(*cmd):
+            r = subprocess.run([sys.executable] + list(cmd), cwd=repo, env=env, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, "%s\n%s%s" % (" ".join(cmd), r.stdout, r.stderr))
+            return r.stdout
+
+        tests = ["-m", "unittest", "discover", "-s", "tests", "-p", "test_check_tools.py"]
+        # a branch: the plain list is out of date; the check says so as a notice only
+        out = sh("scripts/check_tools.py", "--allow-stale-fallback", "--github")
+        self.assertIn("::notice file=index.html::" + check_tools.STALE_NOTICE, out)
+        sh(*tests)
+        # main: the check rewrites the list, then the tests run on the rewritten copy
+        sh("scripts/check_tools.py", "--write", "--github")
+        self.assertIn(">Shift Swap Test</a>", (repo / "index.html").read_text())
+        sh(*tests)
+        sh("scripts/check_tools.py")
 
 
 class TestFileRules(Base):
@@ -378,10 +421,22 @@ class TestFallback(Base):
                          "owner": "ED Administration"})
         self.save_tools(tools)
         items = [t for t, _ in check_tools.fallback_items(tools)]
-        self.assertEqual(items, ["ED Hub", "Motion Voting", "Motion Voting: Settings", "Physician Hiring",
-                                 "CPOE Order Review", "Late", "Patient Hub", "Patient Hub: Content editor",
-                                 "Patient Hub: Map Studio", "Patient Hub: Editing guide",
-                                 "Patient Hub: Visit statistics"])
+        # expected order, worked out from the fixture: groups in first-use order, tools in
+        # file order within each group, each tool followed by its related links
+        expected = []
+        groups = []
+        for t in tools:
+            if t["group"] not in groups:
+                groups.append(t["group"])
+        for g in groups:
+            for t in tools:
+                if t["group"] == g:
+                    expected.append(t["name"])
+                    expected += ["%s: %s" % (t["name"], link["name"]) for link in t.get("related", {}).get("links", [])]
+        self.assertEqual(items, expected)
+        # "Late" is listed second in the file but shows with its group, after the ED team tools
+        self.assertGreater(items.index("Late"), items.index(FIXTURE_TOOLS[3]["name"]))
+        self.assertEqual(items[items.index("Motion Voting") + 1], "Motion Voting: Settings")
 
     def test_16_readme_warns_only(self):
         self.write("README.md", self.text("README.md").replace("| Physician Hiring |", "| Hiring |"))
@@ -405,7 +460,7 @@ class TestFallback(Base):
         summary = self.tmp / "summary.md"
         code, out = self.main_cli("--github", env={"GITHUB_STEP_SUMMARY": str(summary)})
         self.assertEqual(code, 0)
-        self.assertIn("All 5 tools look right.", summary.read_text())
+        self.assertIn("All %d tools look right." % FIXTURE_COUNT, summary.read_text())
 
 
 class FakeAnswer:
@@ -497,13 +552,24 @@ class TestWorkflow(unittest.TestCase):
         code = "\n".join(ln.split("#", 1)[0] for ln in wf.splitlines())   # without comments
         self.assertNotRegex(code, r"(?m)^\s*schedule\s*:")
         self.assertNotRegex(code, r"(?m)^\s*tags(-ignore)?\s*:")
-        self.assertIn("if: github.ref_name == env.SAVE_BRANCH", wf)
         expected = os.environ.get("EXPECTED_SAVE_BRANCH") or "main"
-        m = re.search(r"^\s*SAVE_BRANCH:\s*(\S+)\s*$", wf, re.M)
-        self.assertEqual(m.group(1), expected)
+        found = re.findall(r"^\s*SAVE_BRANCH:\s*(\S+)\s*$", wf, re.M)
+        self.assertEqual(found, [expected])                    # defined once, for both jobs
         self.assertIn("python3 scripts/check_tools.py --allow-stale-fallback --github", wf)
         self.assertNotIn("pull --rebase", wf)
-        save = wf[wf.index("- name: Save the updated fallback list"):]
+        # two jobs: "check" can only read; "save" runs on the save branch only, after check
+        self.assertRegex(code, r"(?m)^permissions:\n  contents: read\n")
+        check_job = wf[wf.index("\n  check:\n"):wf.index("\n  save:\n")]
+        save_job = wf[wf.index("\n  save:\n"):]
+        self.assertRegex(check_job, r"permissions:\n      contents: read\n")
+        self.assertNotIn("write", check_job.split("steps:")[0])
+        self.assertIn("persist-credentials: false", check_job)
+        self.assertIn('if [ "$GITHUB_REF_NAME" = "$SAVE_BRANCH" ]; then echo "save=yes"', check_job)
+        self.assertNotIn("git push", check_job)
+        self.assertIn("needs: check", save_job)
+        self.assertIn("if: needs.check.outputs.save == 'yes'", save_job)
+        self.assertRegex(save_job, r"permissions:\n      contents: write[^\n]*\n      pages: write")
+        save = save_job[save_job.index("- name: Save the updated fallback list"):]
         fetch = save.index('git fetch --quiet origin "$GITHUB_REF_NAME"')
         reset = save.index("git reset --quiet --hard FETCH_HEAD")
         write = save.index("python3 scripts/check_tools.py --write")
