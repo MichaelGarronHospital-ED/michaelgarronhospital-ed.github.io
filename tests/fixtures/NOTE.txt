@@ -1,0 +1,4 @@
+Frozen test data. tools.json here is a copy of the real list on 2026-10-16 (five tools);
+icons/ holds the icons it names. The tests run the real app.js, index.html and 404.html
+against this list, so adding, renaming or removing a real tool never breaks a test.
+Do not update these files when the real tools.json changes.

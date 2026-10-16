@@ -1,0 +1,107 @@
+name: Check the tool list
+
+# Runs when tools.json, the pages, icons or the checker change. Push only (any branch,
+# never tags), no schedule. Public repo: Actions minutes are free; a run takes about 15
+# seconds. It checks tools.json, the icons and app.js. On main only, if the plain fallback
+# list in index.html is out of date, a second job fixes it and saves (commits) the fix to
+# main. It never commits to other branches: a bot commit there would become the pull
+# request's newest commit, which has no check of its own, so the pull request would lose
+# its green tick (bot pushes start no workflow run).
+#
+# Two jobs, so only the small save job can write: "check" reads only; "save" runs on
+# main only, after "check" passed, with write access to contents and Pages.
+on:
+  push:
+    branches: ['**']
+    paths:
+      - tools.json
+      - index.html
+      - 404.html
+      - app.js
+      - icons/**
+      - scripts/**
+      - tests/test_check_tools.py
+      - tests/fixtures/**
+      - .github/workflows/check.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # The only branch the bot saves to. Deploy step 5 changes this (and
+  # EXPECTED_SAVE_BRANCH) on a throwaway scratch branch to test the save path; both
+  # are "main" everywhere else (EXPECTED_SAVE_BRANCH is unset, so the test assumes main).
+  SAVE_BRANCH: main
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      save: ${{ steps.branch.outputs.save }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (same pin as patient-hub)
+        with:
+          persist-credentials: false
+      - name: Check tools.json, icons and app.js
+        run: |
+          if [ "$GITHUB_REF_NAME" = "$SAVE_BRANCH" ]; then
+            python3 scripts/check_tools.py --write --github
+          else
+            python3 scripts/check_tools.py --allow-stale-fallback --github
+          fi
+      - name: Test the checker
+        run: python3 -m unittest discover -s tests -p 'test_check_tools.py'
+      - name: Is this the branch the bot saves to?
+        id: branch
+        run: |
+          if [ "$GITHUB_REF_NAME" = "$SAVE_BRANCH" ]; then echo "save=yes" >> "$GITHUB_OUTPUT"; else echo "save=no" >> "$GITHUB_OUTPUT"; fi
+
+  save:
+    needs: check
+    if: needs.check.outputs.save == 'yes'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write   # to save the regenerated fallback list (main only)
+      pages: write      # to ask Pages to rebuild after that save on main
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (same pin as patient-hub)
+      - name: Save the updated fallback list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Always rebuild the list on the NEWEST commit of the branch, not the one this
+          # run started from: a later save may have touched only README.md (no run of its
+          # own), or may land while this run works. Two tries; never a red cross for a
+          # good change.
+          for attempt in 1 2; do
+            git fetch --quiet origin "$GITHUB_REF_NAME"
+            git reset --quiet --hard FETCH_HEAD
+            if ! python3 scripts/check_tools.py --write; then
+              echo "::warning::The newest save has a problem of its own; its own check reports it. List not updated."
+              exit 0
+            fi
+            if git diff --quiet -- index.html; then
+              echo "The plain fallback list is up to date."
+              exit 0
+            fi
+            git add index.html
+            git commit --quiet -m "Update the plain fallback list from tools.json"
+            if git push --quiet origin "HEAD:$GITHUB_REF_NAME"; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" >/dev/null \
+                || echo "::warning::Could not ask GitHub Pages to rebuild. The next change will publish the list."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::warning::Could not save the updated list (main kept moving). The next change will fix it; the local check also flags it."
+          exit 0

@@ -18,6 +18,8 @@
   <meta property="og:url" content="https://michaelgarronhospital-ed.github.io/">
   <meta property="og:image" content="https://michaelgarronhospital-ed.github.io/icons/apple-touch-icon.png">
   <meta property="og:type" content="website">
+  <!-- Marks that JavaScript runs, so styles.css can keep the plain list hidden while the tiles load. -->
+  <script>document.documentElement.classList.add("js");</script>
   <!-- Shared ED look first (tokens and ed- classes), then this page's own layout. -->
   <link rel="stylesheet" href="shared/ed-ui.css">
   <link rel="stylesheet" href="styles.css">
@@ -30,25 +32,37 @@
       <p class="lede">Every Emergency Department tool, <span class="nowrap">in one place.</span></p>
     </header>
 
-    <!-- Grouped lists are generated from tools.json by app.js. To add a tool, edit tools.json only. -->
-    <div id="tools"></div>
-
-    <noscript>
-      <ul class="cards plain">
+    <!-- Grouped lists are built from tools.json by app.js. To add, rename or remove a tool,
+         edit tools.json only. The check (scripts/check_tools.py) writes the plain list below
+         for you; it shows when JavaScript is off or the tool list cannot be loaded. -->
+    <div id="tools">
+      <!-- tools-fallback:start. Made from tools.json by scripts/check_tools.py. Do not edit by hand. -->
+      <ul class="cards plain" aria-label="ED tools">
         <li><a class="fallback" href="https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports">ED Hub</a></li>
         <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/">Motion Voting</a></li>
-        <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html">Motion Voting settings</a></li>
+        <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html">Motion Voting: Settings</a></li>
         <li><a class="fallback" href="https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/">Physician Hiring</a></li>
-        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev">Patient Hub</a></li>
-        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/">Patient Hub content editor</a></li>
-        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html">Patient Hub Map Studio</a></li>
-        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/internal/analytics">Patient Hub visit statistics</a></li>
         <li><a class="fallback" href="https://mghcpoe.pythonanywhere.com">CPOE Order Review</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev">Patient Hub</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/">Patient Hub: Content editor</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html">Patient Hub: Map Studio</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/admin/guide.html">Patient Hub: Editing guide</a></li>
+        <li><a class="fallback" href="https://mgh-ed-patient-hub.pages.dev/internal/analytics">Patient Hub: Visit statistics</a></li>
       </ul>
-    </noscript>
+      <!-- tools-fallback:end -->
+    </div>
+
+    <p id="status-announce" class="sr-only" role="status"></p>
 
     <footer class="foot">
-      <a href="https://github.com/MichaelGarronHospital-ED/michaelgarronhospital-ed.github.io">About these tools</a>
+      <p class="foot-owner">Run by MGH Emergency Department Administration.</p>
+      <p class="foot-links">
+        <a id="report-link" href="mailto:MGHEmergencyDepartmentAdministration@tehn.ca?subject=%5BED%20tools%5D%20Problem%20report&amp;body=Which%20tool%3A%0D%0AWhat%20happened%3A%0D%0AWhen%20(date%20and%20time)%3A%0D%0AYour%20device%20and%20browser%20(for%20example%20iPhone%2C%20Safari)%3A%0D%0A%0D%0AFor%20tool%20problems%20only.%20Not%20for%20medical%20questions.%20Please%20do%20not%20write%20names%2C%20health%20card%20numbers%20or%20health%20details.">Report a problem</a>
+        <a href="https://github.com/MichaelGarronHospital-ED/michaelgarronhospital-ed.github.io">About these tools</a>
+      </p>
+      <p class="foot-address">Or email <span class="addr">MGHEmergencyDepartmentAdministration@tehn.ca</span></p>
+      <p class="foot-address">For tool problems only. Not for medical questions. Please do not
+        write names, health card numbers or health details.</p>
     </footer>
   </main>
   <script src="app.js" defer></script>

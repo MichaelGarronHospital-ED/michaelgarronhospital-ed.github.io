@@ -1,0 +1,85 @@
+[
+  {
+    "name": "ED Hub",
+    "group": "For the ED team",
+    "description": "Physician resources and referral supports.",
+    "url": "https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports",
+    "icon": "icons/ed-hub.svg",
+    "color": "green",
+    "repo": "",
+    "owner": "ED Administration"
+  },
+  {
+    "name": "Motion Voting",
+    "group": "For the ED team",
+    "description": "Live weighted voting at department meetings.",
+    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/",
+    "icon": "icons/motion-voting.svg",
+    "color": "blue",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting",
+    "owner": "ED Administration",
+    "check": true,
+    "related": {
+      "label": "For admins",
+      "links": [
+        {
+          "name": "Settings",
+          "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Physician Hiring",
+    "group": "For the ED team",
+    "description": "Screen, schedule, score and rank applicants.",
+    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/",
+    "icon": "icons/physician-hiring.svg",
+    "color": "indigo",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
+    "owner": "ED Administration",
+    "check": true
+  },
+  {
+    "name": "CPOE Order Review",
+    "group": "For the ED team",
+    "description": "Review the ED quick orders before go-live.",
+    "url": "https://mghcpoe.pythonanywhere.com",
+    "icon": "icons/cpoe.svg",
+    "color": "orange",
+    "repo": "private",
+    "owner": "ED Administration"
+  },
+  {
+    "name": "Patient Hub",
+    "group": "For patients and families",
+    "description": "A plain-language guide for patients and families.",
+    "url": "https://mgh-ed-patient-hub.pages.dev",
+    "icon": "icons/patient-hub.svg",
+    "color": "teal",
+    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub",
+    "owner": "ED Administration",
+    "check": true,
+    "related": {
+      "label": "For admins",
+      "links": [
+        {
+          "name": "Content editor",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/"
+        },
+        {
+          "name": "Map Studio",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html"
+        },
+        {
+          "name": "Editing guide",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/guide.html"
+        },
+        {
+          "name": "Visit statistics",
+          "url": "https://mgh-ed-patient-hub.pages.dev/internal/analytics"
+        }
+      ]
+    }
+  }
+]
