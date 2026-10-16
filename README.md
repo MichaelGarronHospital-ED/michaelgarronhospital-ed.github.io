@@ -35,8 +35,8 @@ No framework, no build step, no dependencies. Open the files in any editor.
 | `404.html` | Shown for any mistyped or dead address on this domain, with a button back to the dashboard and a "Report a broken link" email link. |
 | `icons/` | One SVG icon per tool, the favicon, and `apple-touch-icon.png` (the icon when someone adds the dashboard to their phone's home screen; also the link-preview image). |
 | `scripts/check_tools.py` | The check. Finds mistakes in `tools.json` (missing comma, misspelt colour, missing icon, a password in a link) and writes the plain list in `index.html`. Runs by itself on GitHub after every save; also `python3 scripts/check_tools.py` on a computer. |
-| `tests/` | Tests for the check (`test_check_tools.py`) and for the page in a real browser (`test_page.py`). Not part of the page. |
-| `.github/workflows/check.yml` | Runs the check after each save on GitHub (about 15 seconds, free for this public repo, no schedule). On `main` it also saves the updated plain list itself. |
+| `tests/` | Tests for the check (`test_check_tools.py`) and for the page in a real browser (`test_page.py`). They use a frozen copy of the tool list in `tests/fixtures/`, so changing the real `tools.json` never breaks them; do not update the fixture when you change a tool. Not part of the page. |
+| `.github/workflows/check.yml` | Runs the check after each save on GitHub (about 15 seconds, free for this public repo, no schedule). The check itself can only read. On `main` only, a second small job then saves the updated plain list itself. |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are. |
 
 ### Add, rename or remove a tool (on the GitHub website, no coding)

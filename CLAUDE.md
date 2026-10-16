@@ -9,7 +9,9 @@ Live at https://michaelgarronhospital-ed.github.io/ (this repo's name makes it t
   (standard library only; `--write` rewrites the fallback list, `--live` HEADs every link);
   tests in `tests/`: `python3 -m unittest discover -s tests -p 'test_check_tools.py'` and
   `~/.venvs/mgh-ed-tools/bin/python -m unittest discover -s tests -p 'test_page.py'`
-  (Playwright, Chromium and WebKit). `bash ../check-all.sh` runs them all.
+  (Playwright, Chromium and WebKit). `bash ../check-all.sh` runs them all. Tests use the
+  frozen list in `tests/fixtures/`, never the live `tools.json` (except one page test that
+  only loads the real list); never write a test that counts or names the live tools.
 - Preview: `python3 -m http.server 8000`, then open http://localhost:8000
   (opening index.html from disk will not load tools.json).
 - Add, rename or remove a tool: edit `tools.json` only (and optionally the README table).
@@ -27,11 +29,13 @@ copies live in the other tool repos and must stay identical.
 GitHub Pages from `main`, root folder. A push to `main` is live about a minute later.
 Ruleset "Protect main" blocks force-pushes and branch deletion only.
 
-`.github/workflows/check.yml` (push only, any branch, no schedule) runs the check. It saves
-the regenerated fallback list to `main` only (never to other branches: that would take the
-green tick off a pull request). If "Protect main" ever requires a pull request, the bot's
-push to `main` fails: then add GitHub Actions as a bypass actor in the ruleset, or delete
-the save step (the local check still catches drift). Do not make the check a required
+`.github/workflows/check.yml` (push only, any branch, no schedule) has two jobs: `check`
+(read-only token) and `save`, which runs only on `SAVE_BRANCH` (`main`) after `check` passed
+and is the only job with `contents: write` and `pages: write`. It saves the regenerated
+fallback list to `main` only (never to other branches: that would take the green tick off a
+pull request). If "Protect main" ever requires a pull request, the bot's push to `main`
+fails: then add GitHub Actions as a bypass actor in the ruleset, or delete the `save` job
+(the local check still catches drift). Do not make the check a required
 status check (it would block the bot's own save and the "saved to main by mistake" path).
 
 ## Accounts
