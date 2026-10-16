@@ -119,7 +119,6 @@ class TestRealRepo(Base):
                       "owner": "ED Administration", "repo": ""})
         (repo / "tools.json").write_text(json.dumps(tools, indent=2))
         env = dict(os.environ, DASHBOARD_NESTED_TEST="1", GITHUB_STEP_SUMMARY=str(self.tmp / "summary.md"))
-        env.pop("EXPECTED_SAVE_BRANCH", None)
 
         def sh(*cmd):
             r = subprocess.run([sys.executable] + list(cmd), cwd=repo, env=env, capture_output=True, text=True)
