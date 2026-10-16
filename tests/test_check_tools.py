@@ -187,10 +187,10 @@ class TestFileRules(Base):
         self.assertFails("has the same name as tool")
 
     def test_10_em_dash_and_notice(self):
-        self.edit(lambda t: t.update(description="Resources — referrals"))
+        self.edit(lambda t: t.update(description="Resources \u2014 referrals"))
         self.assertFails("em dash")
         self.setUp()
-        self.edit(lambda t: t.update(notice="Closed — back soon"))
+        self.edit(lambda t: t.update(notice="Closed \u2014 back soon"))
         self.assertFails("em dash")
         self.setUp()
         self.edit(lambda t: t.update(notice="x" * 141))

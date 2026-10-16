@@ -39,7 +39,7 @@ KNOWN_FIELDS = ["name", "group", "description", "url", "icon", "color", "owner",
 REQUIRED = [("name", 40), ("group", 40), ("description", 90), ("url", None), ("icon", None),
             ("color", None), ("owner", 60)]
 SECRET_KEYS = {"password", "pass", "pwd", "token", "key", "code", "secret", "apikey"}
-EM_DASH = "—"
+EM_DASH = "\u2014"
 SUBJECT_PREFIX = "%5BED%20tools%5D"
 START_MARK = "<!-- tools-fallback:start. Made from tools.json by scripts/check_tools.py. Do not edit by hand. -->"
 END_MARK = "<!-- tools-fallback:end -->"
