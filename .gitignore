@@ -1,0 +1,3 @@
+# Python caches made by running the check and the tests
+__pycache__/
+*.pyc
