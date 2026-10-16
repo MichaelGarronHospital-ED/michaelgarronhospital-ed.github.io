@@ -1,0 +1,656 @@
+"""Browser tests for the dashboard page (index.html, app.js, styles.css).
+
+The page is loaded at its real address, https://michaelgarronhospital-ed.github.io/,
+but nothing reaches the network: Playwright routes answer every request from the
+working copy on disk, and answer the status checks (HEAD requests) the way each test
+says. Any other request (SharePoint, CPOE, anything) fails the test. page.clock runs
+the page's timers (1 s start, 5 s retry, 8 s and 10 s timeouts) without waiting.
+
+Needs Playwright (the shared ~/.venvs/mgh-ed-tools has it):
+
+    ~/.venvs/mgh-ed-tools/bin/python -m unittest discover -s tests -p 'test_page.py'
+
+Runs in Chromium and WebKit (Safari's engine). DASHBOARD_BROWSERS=chromium limits it.
+The accessibility test uses axe-core from ../patient-hub/node_modules (skipped if missing).
+"""
+
+import json
+import os
+import re
+import sys
+import unittest
+import urllib.parse
+from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts"))
+import check_tools  # noqa: E402
+
+SITE = "https://michaelgarronhospital-ed.github.io"
+HUB = "https://mgh-ed-patient-hub.pages.dev"
+ADDRESS = "MGHEmergencyDepartmentAdministration@tehn.ca"
+AXE = REPO.parent / "patient-hub" / "node_modules" / "axe-core" / "axe.min.js"
+TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+         ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
+         ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon"}
+NETWORK_NOISE = ("Failed to load resource",)
+LONG_NOTICE = ("Closed for planned updates on Friday from 3 pm to 5 pm. Please use the paper forms "
+               "at the desk until then. Thank you for your patience.")
+
+# Runs in every page before its own scripts: lets a test set the page hidden or
+# visible, and records whether the plain fallback list was ever visible.
+INIT = """
+(() => {
+  window.__vis = %s;
+  Object.defineProperty(Document.prototype, "visibilityState", { configurable: true, get() { return window.__vis; } });
+  Object.defineProperty(Document.prototype, "hidden", { configurable: true, get() { return window.__vis !== "visible"; } });
+  window.__setVis = (v) => { window.__vis = v; document.dispatchEvent(new Event("visibilitychange")); };
+  window.__plainEverVisible = false;
+  const look = () => {
+    const p = document.querySelector("#tools > .plain");
+    if (p && getComputedStyle(p).visibility === "visible") window.__plainEverVisible = true;
+  };
+  document.addEventListener("DOMContentLoaded", () => {
+    look();
+    const p = document.querySelector("#tools > .plain");
+    window.__plainAtStart = p ? getComputedStyle(p).visibility : "none";
+    new MutationObserver(look).observe(document.documentElement, { subtree: true, childList: true, attributes: true });
+  });
+  if (%s) { const loop = () => { look(); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+})();
+"""
+
+
+def tools_json():
+    return json.loads((REPO / "tools.json").read_text())
+
+
+class Harness:
+    """One browser context with routes. plans[key] is a list of steps, one per request
+    to that key (the last one repeats): an HTTP status, "abort", "hang" (never answer)
+    or "hold" (kept in held[key] until the test answers it)."""
+
+    KEYS = ("hiring", "voting", "hub", "control")
+
+    def __init__(self, test, browser, js=True, color_scheme="light", viewport=(1024, 800), hidden=False,
+                 clock=True, clock_time="2026-10-16T12:00:00-04:00", index_html=None, tools=None,
+                 tools_body=None, app_js=None, tools_get="ok", poll=False):
+        self.test = test
+        self.plans = {k: [200] for k in self.KEYS}
+        self.requests = []          # (key, method, mode)
+        self.unexpected = []
+        self.held = {k: [] for k in self.KEYS + ("tools",)}
+        self.hung = []
+        self.errors = []            # console errors and page errors
+        self.warnings = []
+        self.index_html = index_html
+        self.tools_body = tools_body if tools_body is not None else (json.dumps(tools) if tools is not None else None)
+        self.app_js = app_js
+        self.tools_get = tools_get
+        self.ctx = browser.new_context(java_script_enabled=js, color_scheme=color_scheme,
+                                       viewport={"width": viewport[0], "height": viewport[1]},
+                                       timezone_id="America/Toronto", locale="en-CA")
+        self.ctx.add_init_script(INIT % (json.dumps("hidden" if hidden else "visible"), "true" if poll else "false"))
+        self.ctx.route("**/*", self._route)
+        self.page = self.ctx.new_page()
+        self.page.on("console", self._console)
+        self.page.on("pageerror", lambda e: self.errors.append("pageerror: %s" % e))
+        if clock and js:
+            self.page.clock.install(time=clock_time)
+        test.addCleanup(self.close)
+
+    def close(self):
+        for route in self.hung + [r for k in self.held for r in self.held[k]]:
+            try:
+                route.abort()
+            except Exception:
+                pass
+        self.hung, self.held = [], {k: [] for k in self.held}
+        try:
+            self.ctx.close()
+        except Exception:
+            pass
+
+    def _console(self, msg):
+        if msg.type == "error":
+            self.errors.append("console.error: " + msg.text)
+        elif msg.type == "warning":
+            self.warnings.append(msg.text)
+
+    # ---- routes -------------------------------------------------------------
+    def _route(self, route):
+        req = route.request
+        url = urllib.parse.urlsplit(req.url)
+        origin = "%s://%s" % (url.scheme, url.netloc)
+        headers = req.headers
+        mode = headers.get("sec-fetch-mode") or ("cors" if "origin" in headers else "no-cors")
+        if origin == SITE:
+            path = url.path
+            if path.startswith("/mgh-ed-hiring/"):
+                return self._answer(route, "hiring", req.method, mode)
+            if path.startswith("/mgh-ed-motion-voting/"):
+                return self._answer(route, "voting", req.method, mode)
+            if path == "/tools.json" and req.method == "HEAD":
+                return self._answer(route, "control", req.method, mode)
+            return self._file(route, path)
+        if origin == HUB:
+            return self._answer(route, "hub", req.method, mode)
+        self.unexpected.append(req.url)
+        route.abort()
+
+    def _answer(self, route, key, method, mode):
+        n = sum(1 for k, _, _ in self.requests if k == key)
+        self.requests.append((key, method, mode))
+        plan = self.plans[key]
+        self._do(route, key, plan[min(n, len(plan) - 1)])
+
+    def _do(self, route, key, step):
+        if step == "abort":
+            route.abort("failed")
+        elif step == "hang":
+            self.hung.append(route)
+        elif step == "hold":
+            self.held[key].append(route)
+        else:
+            headers = {"access-control-allow-origin": "*"} if key == "hub" else {}
+            route.fulfill(status=int(step), headers=headers, body="")
+
+    def release(self, key, step):
+        while self.held[key]:
+            self._do(self.held[key].pop(0), key, step)
+
+    def _file(self, route, path):
+        name = "index.html" if path in ("/", "/index.html") else path.lstrip("/")
+        if name == "tools.json" and self.tools_get != "ok":
+            if self.tools_get == "hang":
+                self.hung.append(route)
+            else:
+                self.held["tools"].append(route)
+            return
+        body = None
+        if name == "index.html" and self.index_html is not None:
+            body = self.index_html
+        elif name == "tools.json" and self.tools_body is not None:
+            body = self.tools_body
+        elif name == "app.js" and self.app_js is not None:
+            if isinstance(self.app_js, int):
+                return route.fulfill(status=self.app_js, body="Not found")
+            body = self.app_js
+        file = REPO / name
+        if body is None:
+            if not file.is_file() or ".." in name:
+                return route.fulfill(status=404, body="Not found")
+            return route.fulfill(status=200, body=file.read_bytes(),
+                                 headers={"content-type": TYPES.get(file.suffix, "application/octet-stream")})
+        return route.fulfill(status=200, body=body, headers={"content-type": TYPES.get(Path(name).suffix, "text/plain")})
+
+    def release_tools(self):
+        while self.held["tools"]:
+            route = self.held["tools"].pop(0)
+            route.fulfill(status=200, body=(REPO / "tools.json").read_text(), headers={"content-type": TYPES[".json"]})
+
+    # ---- driving -----------------------------------------------------------
+    def open(self, wait_tiles=True):
+        self.page.goto(SITE + "/")
+        if wait_tiles:
+            self.page.wait_for_selector("#tools .card")
+        return self.page
+
+    def tick(self, ms, step=250):
+        """Move the page's clock forward in small steps, letting answers arrive between."""
+        done = 0
+        while done < ms:
+            n = min(step, ms - done)
+            self.page.clock.run_for(n)
+            self.page.wait_for_timeout(12)
+            done += n
+
+    def wait_until(self, pred, what, timeout_ms=5000):
+        waited = 0
+        while not pred():
+            if waited >= timeout_ms:
+                self.test.fail("timed out waiting for " + what)
+            self.page.wait_for_timeout(20)
+            waited += 20
+
+    def count(self, key=None):
+        return sum(1 for k, _, _ in self.requests if key is None or k == key)
+
+    def checks(self):
+        return sum(1 for k, _, _ in self.requests if k != "control")
+
+    def set_plan(self, **plans):
+        for k, v in plans.items():
+            self.plans[k] = v if isinstance(v, list) else [v]
+
+    def statuses(self):
+        return self.page.eval_on_selector_all(".status .ed-pill", "els => els.map(e => e.closest('.card').querySelector('.main').textContent)")
+
+    def announced(self):
+        return self.page.text_content("#status-announce")
+
+    def assert_clean(self, allow_network=False, allow=()):
+        errs = [e for e in self.errors
+                if not (allow_network and any(n in e for n in NETWORK_NOISE))
+                and not any(a in e for a in allow)]
+        self.test.assertEqual(errs, [], "console errors")
+        self.test.assertEqual(self.unexpected, [], "requests to addresses the page must never ask")
+
+
+class PageTests:
+    BROWSER = "chromium"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pw = sync_playwright().start()
+        cls.browser = getattr(cls.pw, cls.BROWSER).launch()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close()
+        cls.pw.stop()
+
+    def h(self, **kw):
+        return Harness(self, self.browser, **kw)
+
+    def warn_after_checks(self, h, ms=25000):
+        h.tick(ms)
+
+    # 1
+    def test_01_all_healthy(self):
+        h = self.h()
+        page = h.open()
+        self.assertEqual(page.evaluate("window.__plainAtStart"), "hidden")
+        self.assertEqual(page.locator("#tools .card").count(), 5)
+        h.tick(25000)
+        self.assertEqual(h.checks(), 3)                     # voting, hiring, Patient Hub; one each
+        self.assertEqual(h.count("control"), 0)
+        self.assertEqual(page.locator(".status").count(), 0)
+        self.assertEqual(h.announced(), "")
+        self.assertEqual(page.locator("#tools > .plain").count(), 0)
+        self.assertFalse(page.evaluate("window.__plainEverVisible"))
+        h.assert_clean()
+
+    # 2
+    def test_02_hiring_404_twice(self):
+        h = self.h()
+        h.set_plan(hiring=404)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.count("hiring"), 2)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        main = page.locator('.card:has(.status) .main')
+        ids = main.get_attribute("aria-describedby").split()
+        pill = page.locator(".status .ed-pill")
+        self.assertIn(pill.get_attribute("id"), ids)
+        self.assertEqual(pill.inner_text().strip(), "Not loading right now")
+        self.assertEqual(h.announced(), "Physician Hiring is not loading right now.")
+        href = page.locator(".status-report").get_attribute("href")
+        self.assertTrue(href.startswith("mailto:" + ADDRESS + "?subject="), href)
+        q = urllib.parse.parse_qs(href.split("?", 1)[1])
+        self.assertEqual(q["subject"], ["[ED tools] Physician Hiring is not loading"])
+        body = q["body"][0]
+        self.assertIn("Tool: Physician Hiring (https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/)", body)
+        self.assertIn("The ED tools page said it was not loading at 2026-10-16 12:00.", body)
+        self.assertTrue(body.endswith("What happened when you tried it:\r\n\r\n" + "For tool problems only. Not for "
+                                      "medical questions. Please do not write names, health card numbers or health details."))
+        h.assert_clean(allow_network=True)
+
+    # 3
+    def test_03_hub_network_failure(self):
+        h = self.h()
+        h.set_plan(hub="abort")
+        h.open()
+        h.tick(25000)
+        modes = [m for k, _, m in h.requests if k == "hub"]
+        self.assertEqual(modes, ["cors", "no-cors", "cors", "no-cors"])
+        self.assertEqual(h.statuses(), ["Patient Hub"])
+        h.assert_clean(allow_network=True)
+
+    # 4
+    def test_04_blip(self):
+        h = self.h()
+        h.set_plan(hiring=[500, 200])
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.count("hiring"), 2)
+        self.assertEqual(page.locator(".status").count(), 0)
+        h.assert_clean(allow_network=True)
+
+    # 5
+    def test_05_device_offline(self):
+        h = self.h()
+        h.set_plan(hiring="abort", voting="abort", hub="abort", control="abort")
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.count("control"), 1)
+        self.assertEqual(page.locator(".status").count(), 0)
+        self.assertEqual(h.announced(), "")
+        h.assert_clean(allow_network=True)
+
+    # 6
+    def test_06_cors_fails_but_site_answers(self):
+        h = self.h()
+        h.set_plan(hub=["abort", 200])          # the cors try fails, the no-cors try gets an answer
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual([m for k, _, m in h.requests if k == "hub"], ["cors", "no-cors"])
+        self.assertEqual(page.locator(".status").count(), 0)
+        h.assert_clean(allow_network=True)
+
+    # 7
+    def test_07_signin_and_odd_answers(self):
+        for status in (401, 403, 405, 429):
+            with self.subTest(status=status):
+                h = self.h()
+                h.set_plan(hiring=status, voting=status, hub=status)
+                page = h.open()
+                h.tick(25000)
+                self.assertEqual(h.checks(), 3)
+                self.assertEqual(page.locator(".status").count(), 0)
+                h.assert_clean(allow_network=True)
+                h.close()
+
+    # 8
+    def test_08_no_answer(self):
+        h = self.h()
+        h.set_plan(voting="hang")
+        page = h.open()
+        h.tick(12000)
+        self.assertEqual(page.locator(".status").count(), 0)   # first timeout only: no warning yet
+        h.tick(12000)
+        self.assertEqual(h.count("voting"), 2)
+        self.assertEqual(h.statuses(), ["Motion Voting"])
+        h.assert_clean(allow_network=True)
+
+    # 9
+    def test_09_two_problems(self):
+        h = self.h()
+        h.set_plan(hiring=404, hub=503)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring", "Patient Hub"])
+        self.assertEqual(h.announced(), "2 tools are not loading right now: Physician Hiring, Patient Hub.")
+        # Each "Report it" has its own accessible name (WCAG 2.4.9). Playwright puts a space
+        # before the hidden suffix because that span is positioned; screen readers vary too.
+        for name in ("Physician Hiring", "Patient Hub"):
+            link = page.get_by_role("link", name=re.compile(r"^Report it ?: %s is not loading$" % name))
+            self.assertEqual(link.count(), 1, name)
+        self.assertEqual(page.get_by_role("link", name=re.compile(r"^Report it")).count(), 2)
+        h.assert_clean(allow_network=True)
+
+    # 10
+    def test_10_notice(self):
+        tools = tools_json()
+        tools[4]["notice"] = "Closed for updates until Friday 3 pm."
+        h = self.h(tools=tools)
+        h.set_plan(hiring="abort", voting="abort", hub="abort", control="abort")
+        page = h.open()
+        note = page.locator(".card .note")
+        self.assertEqual(note.count(), 1)
+        self.assertEqual(note.text_content().strip(), "Note: Closed for updates until Friday 3 pm.")
+        self.assertEqual(note.locator(".sr-only").text_content(), "Note: ")
+        self.assertFalse(note.locator(".sr-only").is_visible() and note.locator(".sr-only").bounding_box()["width"] > 1)
+        main = page.locator('.card:has(.note) .main')
+        self.assertEqual(main.text_content(), "Patient Hub")
+        self.assertIn(note.get_attribute("id"), main.get_attribute("aria-describedby").split())
+        self.assertEqual(h.checks(), 0)                  # shown at once, before any check
+        h.close()
+        for until, shown in (("2026-10-15", False), ("2026-10-16", True), ("16 Oct", True)):
+            with self.subTest(until=until):
+                tools[4]["notice_until"] = until
+                h = self.h(tools=tools)
+                page = h.open()
+                self.assertEqual(page.locator(".card .note").count(), 1 if shown else 0)
+                main = page.locator('.card .main', has_text="Patient Hub")
+                self.assertEqual(main.get_attribute("aria-describedby") is not None, shown)
+                h.assert_clean()
+                h.close()
+
+    # 11
+    def test_11_broken_tools_json(self):
+        h = self.h(tools_body='[{"name": "ED Hub",}')
+        page = h.open(wait_tiles=False)
+        page.wait_for_selector("#tools > .error")
+        self.assertEqual(page.text_content("#tools > .error"),
+                         "The tool list could not be loaded. Here are the main links. Please refresh the page later.")
+        plain = page.locator("#tools > .plain")
+        self.assertTrue(plain.is_visible())
+        self.assertEqual(plain.evaluate("e => getComputedStyle(e).visibility"), "visible")
+        links = page.eval_on_selector_all("#tools > .plain a", "els => els.map(a => [a.textContent, a.getAttribute('href')])")
+        self.assertEqual([tuple(x) for x in links], check_tools.fallback_items(tools_json()))
+        self.assertEqual(page.locator("#tools .card").count(), 0)
+        h.assert_clean()
+
+    # 12
+    def test_12_entry_without_url(self):
+        tools = tools_json()
+        del tools[3]["url"]
+        h = self.h(tools=tools)
+        page = h.open()
+        self.assertEqual(page.locator("#tools .card").count(), 4)
+        self.assertEqual(page.locator(".main", has_text="CPOE Order Review").count(), 0)
+        self.assertEqual(len(h.warnings), 1, h.warnings)
+        h.assert_clean()
+
+    # 13
+    def test_13_javascript_off(self):
+        h = self.h(js=False)
+        page = h.open(wait_tiles=False)
+        plain = page.locator("#tools > .plain")
+        self.assertTrue(plain.is_visible())
+        self.assertTrue(page.get_by_role("link", name="Patient Hub: Editing guide").is_visible())
+        self.assertEqual(page.locator("#tools > .plain a").count(), len(check_tools.fallback_items(tools_json())))
+        report = page.locator("#report-link")
+        self.assertTrue(report.is_visible())
+        self.assertTrue(report.get_attribute("href").startswith("mailto:" + ADDRESS + "?subject=%5BED%20tools%5D"))
+        self.assertTrue(page.get_by_role("link", name="About these tools").is_visible())
+        self.assertIn(ADDRESS, page.text_content(".foot-address"))
+        h.assert_clean()
+
+    def _app_never_runs(self, app_js, allow):
+        h = self.h(app_js=app_js)
+        page = h.open(wait_tiles=False)
+        plain = page.locator("#tools > .plain")
+        style = plain.evaluate("e => [getComputedStyle(e).visibility, getComputedStyle(e).animationDelay]")
+        self.assertEqual(style, ["hidden", "4s"])
+        self.assertFalse(page.evaluate("document.getElementById('tools').classList.contains('app-running')"))
+        page.evaluate("document.getAnimations().forEach(a => a.finish())")
+        self.assertEqual(plain.evaluate("e => getComputedStyle(e).visibility"), "visible")
+        self.assertTrue(plain.is_visible())
+        h.assert_clean(allow=allow)
+
+    # 13a
+    def test_13a_app_js_syntax_error(self):
+        self._app_never_runs("const broken = ;\n", allow=("SyntaxError", "Unexpected token", "Unexpected"))
+
+    # 13b
+    def test_13b_app_js_missing(self):
+        self._app_never_runs(404, allow=NETWORK_NOISE + ("MIME type", "app.js"))
+
+    # 13c
+    def test_13c_slow_tools_json(self):
+        h = self.h(clock=False, tools_get="hold", poll=True)
+        page = h.open(wait_tiles=False)
+        h.wait_until(lambda: h.held["tools"], "the tools.json request")
+        for _ in range(6):                                   # about 6 s of real time
+            state = page.evaluate("""() => { const t = document.getElementById('tools'); const p = t.querySelector('.plain');
+                return [t.classList.contains('app-running'), getComputedStyle(p).visibility, p.getAnimations().length]; }""")
+            self.assertEqual(state, [True, "hidden", 0])
+            page.wait_for_timeout(1000)
+        h.release_tools()
+        page.wait_for_selector("#tools .card")
+        self.assertFalse(page.evaluate("window.__plainEverVisible"))
+        h.assert_clean()
+
+    # 13d
+    def test_13d_hung_tools_json(self):
+        h = self.h(tools_get="hang")
+        page = h.open(wait_tiles=False)
+        h.wait_until(lambda: h.hung, "the tools.json request")
+        h.tick(9000)
+        self.assertEqual(page.locator("#tools > .error").count(), 0)
+        h.tick(1500)
+        page.wait_for_selector("#tools > .error")
+        self.assertTrue(page.locator("#tools > .plain").is_visible())
+        h.tick(30000)
+        self.assertTrue(page.locator("#tools > .plain").is_visible())
+        self.assertEqual(page.locator("#tools > .error").count(), 1)
+        h.assert_clean(allow_network=True)
+
+    # 14
+    def test_14_old_index_without_report_link(self):
+        html = (REPO / "index.html").read_text()
+        html, n = re.subn(r'<a id="report-link"[^>]*>Report a problem</a>', "", html)
+        self.assertEqual(n, 1)
+        h = self.h(index_html=html)
+        h.set_plan(hiring=404)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        self.assertEqual(page.locator(".status-report").count(), 0)
+        h.assert_clean(allow_network=True)
+
+    # 15
+    def test_15_back_button_recheck(self):
+        h = self.h()
+        h.set_plan(hiring=404)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        before = h.checks()
+        h.set_plan(hiring=200)
+        fire = "window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))"
+        h.tick(60000, step=5000)                             # 1 minute later: too soon, nothing happens
+        page.evaluate(fire)
+        h.tick(3000)
+        self.assertEqual((h.checks(), h.statuses()), (before, ["Physician Hiring"]))
+        page.clock.run_for(6 * 60 * 1000)                    # more than 5 minutes after the last check
+        page.evaluate(fire)
+        self.assertEqual(page.locator(".status").count(), 0)  # old marks cleared at once
+        self.assertEqual(h.announced(), "")
+        main = page.locator(".main", has_text="Physician Hiring")
+        self.assertIsNone(main.get_attribute("aria-describedby"))
+        h.tick(25000)
+        self.assertEqual(h.checks(), before + 3)
+        self.assertEqual(page.locator(".status").count(), 0)
+        h.assert_clean(allow_network=True)
+
+    # 15a
+    def test_15a_hidden_at_load(self):
+        h = self.h(hidden=True)
+        h.open()
+        h.tick(30000)
+        self.assertEqual(h.checks(), 0)
+        h.page.evaluate("window.__setVis('visible')")
+        h.tick(900)
+        self.assertEqual(h.checks(), 0)
+        h.tick(300)
+        self.assertEqual(h.checks(), 3)
+        h.assert_clean()
+
+    def _hidden_during_run(self, visible_before_end):
+        h = self.h()
+        h.set_plan(hiring=["hold", "abort"], voting=["hold", "abort"], hub=["hold", "abort"], control="hold")
+        page = h.open()
+        h.tick(1000)
+        h.wait_until(lambda: all(h.held[k] for k in ("hiring", "voting", "hub")), "the first checks")
+        page.evaluate("window.__setVis('hidden')")
+        for k in ("hiring", "voting", "hub"):
+            h.release(k, "abort")                            # every check fails while hidden
+        h.tick(6000)                                         # the retry, also failing
+        h.wait_until(lambda: h.held["control"], "the device-online request")
+        first_run = h.checks()
+        self.assertEqual(first_run, 12)                      # 3 tools x (cors + no-cors) x 2 tries
+        h.set_plan(hiring=200, voting=200, hub=200)
+        if visible_before_end:
+            page.evaluate("window.__setVis('visible')")
+            h.release("control", 200)                        # run ends: discarded
+            h.tick(900)
+            self.assertEqual(h.checks(), first_run)
+            h.tick(300)                                      # about 1 s after the discard
+            self.assertEqual(h.checks(), first_run + 3)
+        else:
+            h.release("control", 200)                        # run ends while still hidden: discarded
+            h.tick(30000)
+            self.assertEqual(h.checks(), first_run)          # nothing until the page is visible
+            page.evaluate("window.__setVis('visible')")
+            h.tick(1200)
+            self.assertEqual(h.checks(), first_run + 3)
+        h.tick(25000)
+        self.assertEqual(page.locator(".status").count(), 0)
+        self.assertEqual(h.announced(), "")
+        h.assert_clean(allow_network=True)
+
+    # 15b
+    def test_15b_hidden_during_run_visible_again(self):
+        self._hidden_during_run(True)
+
+    def test_15b_hidden_during_run_still_hidden(self):
+        self._hidden_during_run(False)
+
+    # 16
+    def test_16_phone_layout(self):
+        tools = tools_json()
+        tools[2]["notice"] = LONG_NOTICE
+        big = ".ed-pill, .status-report { font-size: 26px !important; } .note { font-size: 30px !important; }"
+        for width in (320, 375):
+            for scheme in ("light", "dark"):
+                with self.subTest(width=width, scheme=scheme):
+                    h = self.h(tools=tools, viewport=(width, 800), color_scheme=scheme)
+                    h.set_plan(hiring=404)
+                    page = h.open()
+                    h.tick(25000)
+                    self.assertEqual(h.statuses(), ["Physician Hiring"])
+                    for size in ("normal", "double"):
+                        if size == "double":
+                            page.add_style_tag(content=big)
+                        res = page.evaluate("""() => {
+                          const doc = document.documentElement;
+                          const card = document.querySelector('.card:has(.status)');
+                          const box = card.querySelector('.card-text').getBoundingClientRect();
+                          const out = { scroll: doc.scrollWidth - doc.clientWidth, over: [] };
+                          for (const sel of ['.ed-pill', '.status-report', '.note']) {
+                            const r = card.querySelector(sel).getBoundingClientRect();
+                            if (r.right > box.right + 0.5 || r.left < box.left - 0.5) out.over.push(sel + ' ' + r.right + ' > ' + box.right);
+                          }
+                          return out; }""")
+                        self.assertLessEqual(res["scroll"], 0, size)
+                        self.assertEqual(res["over"], [], size)
+                    h.assert_clean(allow_network=True)
+                    h.close()
+
+    # 17
+    def test_17_axe(self):
+        if not AXE.is_file():
+            self.skipTest("axe-core not found at %s" % AXE)
+        tools = tools_json()
+        tools[4]["notice"] = "Closed for updates until Friday 3 pm."
+        for scheme in ("light", "dark"):
+            with self.subTest(scheme=scheme):
+                h = self.h(tools=tools, color_scheme=scheme)
+                h.set_plan(hiring=404)
+                page = h.open()
+                h.tick(25000)
+                self.assertEqual(h.statuses(), ["Physician Hiring"])
+                page.clock.resume()
+                page.add_script_tag(content=AXE.read_text())
+                result = page.evaluate("""async () => {
+                  const r = await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21aa', 'wcag22aa'] } });
+                  return r.violations.map(v => v.id + ': ' + v.nodes.map(n => n.target.join(' ')).join(', '));
+                }""")
+                self.assertEqual(result, [], scheme)
+                h.assert_clean(allow_network=True)
+                h.close()
+
+
+_wanted = [b.strip() for b in os.environ.get("DASHBOARD_BROWSERS", "chromium,webkit").split(",") if b.strip()]
+for _name in _wanted:
+    _cls = type("TestPage" + _name.capitalize(), (PageTests, unittest.TestCase), {"BROWSER": _name})
+    globals()[_cls.__name__] = _cls
+del _cls, _name
+
+if __name__ == "__main__":
+    unittest.main()
