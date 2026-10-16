@@ -110,6 +110,22 @@ body { margin: 0; }
 
 .error { color: var(--ed-ink-2); text-align: center; }
 
+/* ---- status on a tile: "Not loading right now" and typed notes ---------------- */
+.status { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; margin: 6px 0 0; }
+.status .ed-pill { white-space: normal; }   /* ed-pill is nowrap; .cards hides overflow, so a long or zoomed pill would be clipped silently */
+.status .ed-pill svg { flex: none; }
+.status-report {                       /* above the stretched main link, like .related */
+  position: relative; z-index: 1;
+  display: inline-flex; align-items: center; min-height: var(--ed-tap);
+  color: var(--ed-accent); font-size: var(--ed-text-sm); font-weight: 500; text-decoration: none;
+}
+.status-report:hover { text-decoration: underline; }
+.status-report:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 4px; }
+.note { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 0;
+  font-size: var(--ed-text-sm); line-height: 1.35; color: var(--ed-ink); }
+.note svg { flex: none; width: 14px; height: 14px; margin-top: 2px; color: var(--ed-ink-2); }
+@media (forced-colors: active) { .status .ed-pill { border: 1px solid CanvasText; } }
+
 /* ---- footer ----------------------------------------------------------------- */
 .foot { margin: 40px 0 0; text-align: center; font-size: var(--ed-text-sm); }
 .foot a:not(.ed-btn) {
@@ -118,8 +134,29 @@ body { margin: 0; }
 }
 .foot a:not(.ed-btn):hover { text-decoration: underline; }
 .foot a:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 999px; }
+.foot p { margin: 0; }
+.foot-owner, .foot-address { color: var(--ed-ink-2); }        /* 7.48:1 on bg, 9.09:1 dark */
+.foot-address { margin-top: 4px; overflow-wrap: anywhere; }    /* the long address wraps on phones */
+.foot-address a { color: var(--ed-accent); }                   /* 404.html "Report a broken link" */
+.foot-links { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 8px; }
+.addr { user-select: all; }                                    /* one tap selects the whole address */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* No-JavaScript fallback list (index.html <noscript>): plain rows, no icons. */
+/* The plain fallback list inside #tools (index.html, written from tools.json by
+   scripts/check_tools.py): plain rows, no icons. Without JavaScript it simply shows. With
+   JavaScript it stays hidden (also from screen readers) while app.js builds the tiles,
+   which replace it. If app.js never runs at all (failed to load, typing mistake), the
+   list appears after 4 seconds. The first line of app.js adds .app-running, which
+   cancels that timer, so a slow network never flashes the list in and then swaps tiles
+   in under someone's finger; from then on app.js decides: tiles, or .show-fallback when
+   tools.json is broken, slow (10 s) or render() throws.
+   Do not add "animation: none" for reduced motion here: this is a delay, not motion. */
+.js #tools > .plain { visibility: hidden; animation: fallback-reveal 0s linear 4s forwards; }
+.js #tools.app-running > .plain { animation: none; }
+.js #tools.show-fallback > .plain { visibility: visible; animation: none; }
+@keyframes fallback-reveal { to { visibility: visible; } }
+#tools > .error { margin: 0 0 16px; }
 .cards.plain { --row-inset: 16px; }
 .fallback {
   display: flex; align-items: center; min-height: 52px; padding: 10px 16px;
@@ -146,6 +183,7 @@ body { margin: 0; }
   .card:hover { background: none; }
   .chev, .foot { display: none; }
   .icon { box-shadow: none; }
+  .status-report { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

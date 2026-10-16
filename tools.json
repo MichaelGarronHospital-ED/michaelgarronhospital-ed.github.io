@@ -7,7 +7,7 @@
     "icon": "icons/ed-hub.svg",
     "color": "green",
     "repo": "",
-    "owner": "Alvin Yang"
+    "owner": "ED Administration"
   },
   {
     "name": "Motion Voting",
@@ -17,7 +17,8 @@
     "icon": "icons/motion-voting.svg",
     "color": "blue",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting",
-    "owner": "Alvin Yang",
+    "owner": "ED Administration",
+    "check": true,
     "related": {
       "label": "For admins",
       "links": [
@@ -36,7 +37,8 @@
     "icon": "icons/physician-hiring.svg",
     "color": "indigo",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
-    "owner": "Alvin Yang"
+    "owner": "ED Administration",
+    "check": true
   },
   {
     "name": "CPOE Order Review",
@@ -46,7 +48,7 @@
     "icon": "icons/cpoe.svg",
     "color": "orange",
     "repo": "private",
-    "owner": "Alvin Yang"
+    "owner": "ED Administration"
   },
   {
     "name": "Patient Hub",
@@ -56,7 +58,8 @@
     "icon": "icons/patient-hub.svg",
     "color": "teal",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub",
-    "owner": "Alvin Yang",
+    "owner": "ED Administration",
+    "check": true,
     "related": {
       "label": "For admins",
       "links": [
