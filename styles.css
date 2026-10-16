@@ -148,12 +148,14 @@ body { margin: 0; }
    JavaScript it stays hidden (also from screen readers) while app.js builds the tiles,
    which replace it. If app.js never runs at all (failed to load, typing mistake), the
    list appears after 4 seconds. The first line of app.js adds .app-running, which
-   cancels that timer, so a slow network never flashes the list in and then swaps tiles
+   pauses that timer, so a slow network never flashes the list in and then swaps tiles
    in under someone's finger; from then on app.js decides: tiles, or .show-fallback when
-   tools.json is broken, slow (10 s) or render() throws.
+   tools.json is broken, slow (10 s) or render() throws. Paused, not removed: if app.js
+   arrives after the list has already appeared, the list stays shown until the tiles
+   replace it (removing the animation would hide it again under someone's finger).
    Do not add "animation: none" for reduced motion here: this is a delay, not motion. */
 .js #tools > .plain { visibility: hidden; animation: fallback-reveal 0s linear 4s forwards; }
-.js #tools.app-running > .plain { animation: none; }
+.js #tools.app-running > .plain { animation-play-state: paused; }
 .js #tools.show-fallback > .plain { visibility: visible; animation: none; }
 @keyframes fallback-reveal { to { visibility: visible; } }
 #tools > .error { margin: 0 0 16px; }

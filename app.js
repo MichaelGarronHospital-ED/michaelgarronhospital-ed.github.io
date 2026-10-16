@@ -1,4 +1,4 @@
-document.getElementById("tools")?.classList.add("app-running"); // first: cancels the 4 s CSS reveal of the plain list (styles.css)
+document.getElementById("tools")?.classList.add("app-running"); // first: pauses the 4 s CSS reveal of the plain list (styles.css)
 
 // Builds the page from tools.json. All tool details live in that file; nothing
 // here needs to change when a tool is added, renamed, regrouped or moved.
@@ -90,12 +90,23 @@ function noticeShows(tool) {
   return localToday() <= until;
 }
 
-function relatedBlock(related) {
+// Related links the page can show: a name and an https:// address (same rule as usable()).
+function usableLinks(related) {
+  if (!related || typeof related !== "object" || !Array.isArray(related.links)) return [];
+  return related.links.filter((link) => {
+    const ok = link && typeof link.name === "string" && link.name.trim() &&
+      typeof link.url === "string" && link.url.startsWith("https://");
+    if (!ok) console.warn("tools.json: a related link without a name or an https:// url was skipped.");
+    return ok;
+  });
+}
+
+function relatedBlock(related, links) {
   const box = el("div", "related");
   const head = el("p", "related-head", related.label || "Related");
   const list = el("ul", "related-links");
   list.setAttribute("aria-label", related.label || "Related");
-  for (const link of related.links || []) {
+  for (const link of links) {
     const li = el("li");
     const a = el("a", null, link.name);
     a.href = link.url;
@@ -138,7 +149,8 @@ function card(tool) {
 
   row.append(icn, text, chev);
   card.append(row);
-  if (tool.related && (tool.related.links || []).length) card.append(relatedBlock(tool.related));
+  const links = usableLinks(tool.related);
+  if (links.length) card.append(relatedBlock(tool.related, links));
   li.append(card);
   return li;
 }
@@ -229,10 +241,12 @@ async function check(url) {
   return checkOnce(url);
 }
 
-// Is it the tool, or this device? Ask our own server for tools.json.
+// Is it the tool, or this device? Ask our own server for tools.json. Any answer at
+// all, even an error page, proves this device is online (a GitHub Pages outage must
+// still show the GitHub tools as not loading); only a failed request means offline.
 async function deviceOnline() {
   if (navigator.onLine === false) return false;
-  try { return (await head(new URL("tools.json", location.href).href, "same-origin")).ok; }
+  try { await head(new URL("tools.json", location.href).href, "same-origin"); return true; }
   catch { return false; }
 }
 
@@ -307,7 +321,18 @@ const status = {
   waitingForVisible: false,
   timer: null,
   lastRunAt: 0,
+  waitingForOnline: false,
 };
+
+// Older than five minutes: clear what is shown and ask again (back button, or the
+// page brought back to the front). No polling otherwise.
+function recheckIfStale() {
+  if (!status.lastRunAt || Date.now() - status.lastRunAt <= RECHECK_AFTER_MS) return false;
+  clearMarks();
+  status.runId++;                           // ignore any run still in flight
+  scheduleRun(CHECK_START_MS);
+  return true;
+}
 
 function scheduleRun(delay) {
   clearTimeout(status.timer);
@@ -318,7 +343,13 @@ function scheduleRun(delay) {
 
 async function runChecks() {
   if (document.visibilityState !== "visible") { status.waitingForVisible = true; return; }
-  if (navigator.onLine === false) return;
+  if (navigator.onLine === false) {         // offline: check once the device is back online
+    if (!status.waitingForOnline) {
+      status.waitingForOnline = true;
+      window.addEventListener("online", () => { status.waitingForOnline = false; scheduleRun(CHECK_START_MS); }, { once: true });
+    }
+    return;
+  }
   const id = ++status.runId;
   status.hiddenDuringRun = false;
   status.lastRunAt = Date.now();
@@ -341,14 +372,11 @@ function startChecks(tools) {
   if (!status.tools.length) return;
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") { status.hiddenDuringRun = true; return; }
+    if (recheckIfStale()) return;
     if (status.waitingForVisible) scheduleRun(CHECK_START_MS);
   });
   window.addEventListener("pageshow", (event) => {
-    if (!event.persisted || !status.lastRunAt) return;
-    if (Date.now() - status.lastRunAt <= RECHECK_AFTER_MS) return;
-    clearMarks();
-    status.runId++;                         // ignore any run still in flight
-    scheduleRun(CHECK_START_MS);
+    if (event.persisted) recheckIfStale();
   });
   scheduleRun(CHECK_START_MS);
 }
