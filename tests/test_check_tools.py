@@ -527,13 +527,22 @@ class TestLive(Base):
         self.assertTrue(any("Turn off \"check\"" in m for _, m in r.errors))
         sent = [h for _, u, h in opener.calls if u == self.HUB and "Origin" in h]
         self.assertEqual(sent[0]["Origin"], "https://michaelgarronhospital-ed.github.io")
-        # CORP same-site / same-origin fails with the message; cross-origin passes
+        # CORP same-site / same-origin: an error without ACAO (with the "turn off" message),
+        # only a warning while ACAO still lets the first try read the answer
         for corp in ("same-site", "same-origin"):
-            r, _, _ = self.live({self.HUB: [FakeAnswer(200, {"Access-Control-Allow-Origin": "*",
-                                                              "Cross-Origin-Resource-Policy": corp})]})
+            r, _, _ = self.live({self.HUB: [FakeAnswer(200, {"Cross-Origin-Resource-Policy": corp})]})
             self.assertTrue(any("Patient Hub now sends Cross-Origin-Resource-Policy: %s, which would make the page "
                                 "wrongly say it is not loading. Turn off \"check\" for this tool." % corp in m
                                 for _, m in r.errors), r.errors)
+            r, _, _ = self.live({self.HUB: [FakeAnswer(200, {"Access-Control-Allow-Origin": "*",
+                                                              "Cross-Origin-Resource-Policy": corp})]})
+            self.assertEqual(r.errors, [])
+            self.assertTrue(any("Patient Hub now sends Cross-Origin-Resource-Policy: %s. The check still works" % corp
+                                in m for _, m in r.warnings), r.warnings)
+            r, _, _ = self.live({self.HUB: [FakeAnswer(200, {"Access-Control-Allow-Origin":
+                                                              "https://michaelgarronhospital-ed.github.io",
+                                                              "Cross-Origin-Resource-Policy": corp})]})
+            self.assertEqual(r.errors, [])
         r, _, _ = self.live({self.HUB: [FakeAnswer(200, {"Access-Control-Allow-Origin": "*",
                                                           "Cross-Origin-Resource-Policy": "cross-origin"})]})
         self.assertEqual(r.errors, [])
