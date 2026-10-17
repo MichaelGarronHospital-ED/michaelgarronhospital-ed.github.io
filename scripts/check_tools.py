@@ -491,14 +491,23 @@ def live_check_rule(where, t, report, opener, sleep):
     if host == DASHBOARD_HOST:
         return
     get = ans.headers.get if ans.headers is not None else (lambda k, d=None: d)
-    acao = (get("Access-Control-Allow-Origin") or "").strip()
-    if acao not in ("*", DASHBOARD_ORIGIN):
+    name = t.get("name", where)
+    acao_ok = (get("Access-Control-Allow-Origin") or "").strip() in ("*", DASHBOARD_ORIGIN)
+    if not acao_ok:
         report.error('%s no longer allows the page to read its status (no Access-Control-Allow-Origin). '
-                     'Turn off "check" for this tool.' % t.get("name", where))
+                     'Turn off "check" for this tool.' % name)
+    # Cross-Origin-Resource-Policy only blocks the page's second, no-cors try. While the
+    # host still allows the first try (Access-Control-Allow-Origin above), the check works,
+    # so it is a warning; without that header it means wrong "not loading" warnings.
     corp = (get("Cross-Origin-Resource-Policy") or "").strip()
     if corp and corp.lower() != "cross-origin":
-        report.error('%s now sends Cross-Origin-Resource-Policy: %s, which would make the page wrongly say it is '
-                     'not loading. Turn off "check" for this tool.' % (t.get("name", where), corp))
+        if acao_ok:
+            report.warn('%s now sends Cross-Origin-Resource-Policy: %s. The check still works because it also '
+                        'sends Access-Control-Allow-Origin, but if that header goes, the page would wrongly say '
+                        'it is not loading. Then turn off "check" for this tool.' % (name, corp))
+        else:
+            report.error('%s now sends Cross-Origin-Resource-Policy: %s, which would make the page wrongly say it '
+                         'is not loading. Turn off "check" for this tool.' % (name, corp))
 
 
 # ---- main ----------------------------------------------------------------------

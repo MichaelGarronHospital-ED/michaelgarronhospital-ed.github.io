@@ -81,13 +81,26 @@ function localToday() {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
-// A notice shows unless notice_until is a readable date that has passed.
-// An unreadable date shows the notice: the person meant it to show.
+// Today's date in Toronto, YYYY-MM-DD, whatever time zone this device is set to.
+// The checker (scripts/check_tools.py) uses the same date for "the notice ended".
+function torontoToday() {
+  try {
+    const parts = {};
+    for (const p of new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", year: "numeric",
+      month: "2-digit", day: "2-digit" }).formatToParts(new Date())) parts[p.type] = p.value;
+    if (parts.year && parts.month && parts.day) return parts.year + "-" + parts.month + "-" + parts.day;
+  } catch { /* no time zone data: use this device's date */ }
+  return localToday();
+}
+
+// A notice shows unless notice_until is a readable date that has passed in Toronto
+// (it shows to the end of that day). An unreadable date shows the notice: the person
+// meant it to show.
 function noticeShows(tool) {
   if (typeof tool.notice !== "string" || !tool.notice.trim()) return false;
   const until = tool.notice_until;
   if (typeof until !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(until)) return true;
-  return localToday() <= until;
+  return torontoToday() <= until;
 }
 
 // Related links the page can show: a name and an https:// address (same rule as usable()).
@@ -295,23 +308,44 @@ function markProblem(tool) {
   main.setAttribute("aria-describedby", [pill.id, ...ids.filter((x) => x !== pill.id)].join(" "));
 }
 
-function clearMarks() {
-  document.querySelectorAll("#tools .status").forEach((line) => {
-    const pill = line.querySelector(".ed-pill");
-    const main = line.closest(".card")?.querySelector(".main");
-    if (pill && main) removeDescribedBy(main, pill.id);
-    line.remove();
-  });
-  const live = document.getElementById("status-announce");
-  if (live) live.textContent = "";
+function unmark(line) {
+  const pill = line.querySelector(".ed-pill");
+  const main = line.closest(".card")?.querySelector(".main");
+  if (pill && main) removeDescribedBy(main, pill.id);
+  line.remove();
 }
 
-function announce(names) {
+// Show the result of a finished round: marks stay on tools that are still not
+// loading (the same element, so nothing flickers), go from tools that recovered,
+// and appear on new ones. The live region speaks only when the list changed.
+function showProblems(problems) {
+  const keep = new Set(problems.map((t) => String(t._i)));
+  const before = [];
+  let had = 0;
+  document.querySelectorAll("#tools .status").forEach((line) => {
+    had++;
+    const i = line.closest(".card")?.dataset.tool;
+    if (keep.has(i)) before.push(i);
+    else unmark(line);
+  });
+  problems.forEach(markProblem);
   const live = document.getElementById("status-announce");
-  if (!live || !names.length) return;
+  if (!live) return;
+  if (!problems.length) { live.textContent = ""; return; }
+  const noneNew = before.length === problems.length;
+  if (noneNew && had > problems.length) { live.textContent = ""; return; }   // fewer than before: drop the old sentence, say nothing
+  if (noneNew && live.textContent) return;   // same tools as before: say nothing new
+  const names = problems.map((t) => t.name);
   live.textContent = names.length === 1
     ? names[0] + " is not loading right now."
     : names.length + " tools are not loading right now: " + names.join(", ") + ".";
+}
+
+// Offline: run again once the device says it is back online (one listener at a time).
+function runWhenOnline() {
+  if (status.waitingForOnline) return;
+  status.waitingForOnline = true;
+  window.addEventListener("online", () => { status.waitingForOnline = false; scheduleRun(CHECK_START_MS); }, { once: true });
 }
 
 const status = {
@@ -324,11 +358,10 @@ const status = {
   waitingForOnline: false,
 };
 
-// Older than five minutes: clear what is shown and ask again (back button, or the
-// page brought back to the front). No polling otherwise.
+// Older than five minutes: ask again (back button, or the page brought back to the
+// front). What is shown stays until the new round's answer replaces it. No polling.
 function recheckIfStale() {
   if (!status.lastRunAt || Date.now() - status.lastRunAt <= RECHECK_AFTER_MS) return false;
-  clearMarks();
   status.runId++;                           // ignore any run still in flight
   scheduleRun(CHECK_START_MS);
   return true;
@@ -343,28 +376,24 @@ function scheduleRun(delay) {
 
 async function runChecks() {
   if (document.visibilityState !== "visible") { status.waitingForVisible = true; return; }
-  if (navigator.onLine === false) {         // offline: check once the device is back online
-    if (!status.waitingForOnline) {
-      status.waitingForOnline = true;
-      window.addEventListener("online", () => { status.waitingForOnline = false; scheduleRun(CHECK_START_MS); }, { once: true });
-    }
-    return;
-  }
+  if (navigator.onLine === false) { runWhenOnline(); return; }   // check once back online
   const id = ++status.runId;
   status.hiddenDuringRun = false;
   status.lastRunAt = Date.now();
   const results = await Promise.all(status.tools.map((t) => check(t.url)));
   if (id !== status.runId) return;          // a newer run took over
   const problems = status.tools.filter((t, i) => results[i] === "problem");
-  if (!problems.length) return;             // healthy shows nothing
-  if (!(await deviceOnline())) return;      // it is this device, not the tools
+  if (!problems.length) { showProblems([]); return; }   // healthy shows nothing
+  if (!(await deviceOnline())) {            // it is this device, not the tools: keep what is shown
+    if (id === status.runId && navigator.onLine === false) runWhenOnline();
+    return;
+  }
   if (id !== status.runId) return;
   if (status.hiddenDuringRun) {             // iPhone paused the page: results are not trustworthy
     scheduleRun(CHECK_START_MS);
     return;
   }
-  problems.forEach(markProblem);
-  announce(problems.map((t) => t.name));
+  showProblems(problems);
 }
 
 function startChecks(tools) {

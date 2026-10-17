@@ -108,7 +108,7 @@ class Harness:
     def __init__(self, test, browser, js=True, color_scheme="light", viewport=(1024, 800), hidden=False,
                  clock=True, clock_time="2026-10-16T12:00:00-04:00", index_html=None, tools=None,
                  tools_body=None, app_js=None, tools_get="ok", poll=False, real=False, online=True,
-                 app_get="ok"):
+                 app_get="ok", timezone="America/Toronto"):
         self.test = test
         self.plans = {k: [200] for k in self.KEYS}
         self.requests = []          # (key, method, mode)
@@ -128,7 +128,7 @@ class Harness:
         self.app_get = app_get
         self.ctx = browser.new_context(java_script_enabled=js, color_scheme=color_scheme,
                                        viewport={"width": viewport[0], "height": viewport[1]},
-                                       timezone_id="America/Toronto", locale="en-CA")
+                                       timezone_id=timezone, locale="en-CA")
         self.ctx.add_init_script(INIT % ("true" if online else "false", json.dumps("hidden" if hidden else "visible"),
                                          "true" if poll else "false"))
         self.ctx.route("**/*", self._route)
@@ -580,13 +580,13 @@ class PageTests:
         self.assertEqual((h.checks(), h.statuses()), (before, ["Physician Hiring"]))
         page.clock.run_for(6 * 60 * 1000)                    # more than 5 minutes after the last check
         page.evaluate(fire)
-        self.assertEqual(page.locator(".status").count(), 0)  # old marks cleared at once
+        self.assertEqual(h.statuses(), ["Physician Hiring"])  # kept until the new answer arrives
+        h.tick(25000)
+        self.assertEqual(h.checks(), before + len(CHECKED))
+        self.assertEqual(page.locator(".status").count(), 0)  # recovered: mark replaced by nothing
         self.assertEqual(h.announced(), "")
         main = page.locator(".main", has_text="Physician Hiring")
         self.assertIsNone(main.get_attribute("aria-describedby"))
-        h.tick(25000)
-        self.assertEqual(h.checks(), before + len(CHECKED))
-        self.assertEqual(page.locator(".status").count(), 0)
         h.assert_clean(allow_network=True)
 
     # 15a
@@ -698,7 +698,7 @@ class PageTests:
         page.clock.run_for(6 * 60 * 1000)
         self.assertEqual(h.checks(), before)                 # no polling while away
         page.evaluate("window.__setVis('visible')")
-        self.assertEqual(page.locator(".status").count(), 0)  # old marks cleared at once
+        self.assertEqual(h.statuses(), ["Physician Hiring"])  # kept until the new answer arrives
         h.tick(25000)
         self.assertEqual(h.checks(), before + len(CHECKED))
         self.assertEqual(page.locator(".status").count(), 0)
@@ -718,6 +718,106 @@ class PageTests:
         h.tick(5000)
         self.assertEqual(h.checks(), len(CHECKED))
         h.assert_clean()
+
+    # leftover 2: notice_until counts in Toronto, whatever zone the device is set to
+    def test_10a_notice_until_uses_toronto_date(self):
+        tools = tools_json()
+        hub = tool(tools, "Patient Hub")
+        hub["notice"] = "Closed for updates until Friday 3 pm."
+        hub["notice_until"] = "2026-10-16"
+        cases = [
+            # 23:30 Oct 16 in Toronto is Oct 17 in Tokyo: still Oct 16 in Toronto, so shown
+            ("Asia/Tokyo", "2026-10-16T23:30:00-04:00", True),
+            # 00:30 Oct 17 in Toronto is still Oct 16 in Honolulu: over in Toronto, so hidden
+            ("Pacific/Honolulu", "2026-10-17T00:30:00-04:00", False),
+        ]
+        for zone, when, shown in cases:
+            with self.subTest(zone=zone):
+                h = self.h(tools=tools, timezone=zone, clock_time=when)
+                page = h.open()
+                self.assertEqual(page.locator(".card .note").count(), 1 if shown else 0)
+                h.assert_clean()
+                h.close()
+
+    # leftover 3: a tool that is still down keeps its warning through the recheck
+    def test_15e_recheck_keeps_warning_while_still_down(self):
+        h = self.h()
+        h.set_plan(hiring=404)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        pill_id = page.locator(".status .ed-pill").get_attribute("id")
+        page.evaluate("document.querySelector('.status').dataset.first = 'yes'")
+        said = h.announced()
+        before = h.checks()
+        page.clock.run_for(6 * 60 * 1000)
+        page.evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))")
+        for _ in range(25):                                  # through the whole recheck, second by second
+            h.tick(1000)
+            self.assertEqual(h.statuses(), ["Physician Hiring"])
+        self.assertEqual(h.checks(), before + len(CHECKED) + 1)     # hiring asked twice (retry)
+        self.assertEqual(page.locator(".status").get_attribute("data-first"), "yes")   # the same mark, kept
+        main = page.locator(".main", has_text="Physician Hiring")
+        self.assertEqual(main.get_attribute("aria-describedby").split().count(pill_id), 1)
+        self.assertEqual(h.announced(), said)                 # nothing new to say
+        h.assert_clean(allow_network=True)
+
+    # leftover 3: a second tool going down during the recheck is added and announced
+    def test_15f_recheck_adds_new_problem(self):
+        h = self.h()
+        h.set_plan(hiring=404)
+        page = h.open()
+        h.tick(25000)
+        h.set_plan(hub=503)
+        page.clock.run_for(6 * 60 * 1000)
+        page.evaluate("window.__setVis('hidden')")
+        page.evaluate("window.__setVis('visible')")
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring", "Patient Hub"])
+        self.assertEqual(h.announced(), "2 tools are not loading right now: Physician Hiring, Patient Hub.")
+        h.assert_clean(allow_network=True)
+
+    # review: when fewer tools are down than before, the hidden announcement must not keep the old sentence
+    def test_15h_recheck_fewer_problems_clears_old_announcement(self):
+        h = self.h()
+        h.set_plan(hiring=404, hub=503)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring", "Patient Hub"])
+        self.assertEqual(h.announced(), "2 tools are not loading right now: Physician Hiring, Patient Hub.")
+        h.set_plan(hub=200)
+        page.clock.run_for(6 * 60 * 1000)
+        page.evaluate("window.__setVis('hidden')")
+        page.evaluate("window.__setVis('visible')")
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        self.assertEqual(h.announced(), "")
+        h.assert_clean(allow_network=True)
+
+    # leftover 4: offline at the online check: try again when the device is back online
+    def test_15g_offline_at_online_check(self):
+        h = self.h()
+        h.set_plan(hiring=404)
+        page = h.open()
+        h.tick(1000)                                         # first try fails
+        h.wait_until(lambda: h.count("hiring") >= 1, "the first hiring check")
+        page.evaluate("window.__online = false")             # the device drops off during the retry wait
+        h.tick(25000)
+        self.assertEqual(h.count("hiring"), 2)
+        self.assertEqual(h.count("control"), 0)              # navigator.onLine said offline: no request
+        self.assertEqual(page.locator(".status").count(), 0)
+        before = h.checks()
+        h.tick(30000)
+        self.assertEqual(h.checks(), before)                 # nothing until it is back online
+        page.evaluate("window.__setOnline(true)")
+        h.tick(25000)
+        self.assertEqual(h.checks(), before + len(CHECKED) + 1)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        page.evaluate("window.__setOnline(false)")
+        page.evaluate("window.__setOnline(true)")            # one listener only: no extra round
+        h.tick(5000)
+        self.assertEqual(h.checks(), before + len(CHECKED) + 1)
+        h.assert_clean(allow_network=True)
 
     # review m5: a related link that is not https:// is skipped, like a bad tool
     def test_12a_bad_related_link(self):
