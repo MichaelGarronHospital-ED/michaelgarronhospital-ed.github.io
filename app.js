@@ -321,7 +321,9 @@ function unmark(line) {
 function showProblems(problems) {
   const keep = new Set(problems.map((t) => String(t._i)));
   const before = [];
+  let had = 0;
   document.querySelectorAll("#tools .status").forEach((line) => {
+    had++;
     const i = line.closest(".card")?.dataset.tool;
     if (keep.has(i)) before.push(i);
     else unmark(line);
@@ -330,7 +332,9 @@ function showProblems(problems) {
   const live = document.getElementById("status-announce");
   if (!live) return;
   if (!problems.length) { live.textContent = ""; return; }
-  if (before.length === problems.length && live.textContent) return;   // same tools as before: say nothing new
+  const noneNew = before.length === problems.length;
+  if (noneNew && had > problems.length) { live.textContent = ""; return; }   // fewer than before: drop the old sentence, say nothing
+  if (noneNew && live.textContent) return;   // same tools as before: say nothing new
   const names = problems.map((t) => t.name);
   live.textContent = names.length === 1
     ? names[0] + " is not loading right now."

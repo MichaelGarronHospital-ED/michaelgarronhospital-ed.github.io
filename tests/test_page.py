@@ -777,6 +777,23 @@ class PageTests:
         self.assertEqual(h.announced(), "2 tools are not loading right now: Physician Hiring, Patient Hub.")
         h.assert_clean(allow_network=True)
 
+    # review: when fewer tools are down than before, the hidden announcement must not keep the old sentence
+    def test_15h_recheck_fewer_problems_clears_old_announcement(self):
+        h = self.h()
+        h.set_plan(hiring=404, hub=503)
+        page = h.open()
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring", "Patient Hub"])
+        self.assertEqual(h.announced(), "2 tools are not loading right now: Physician Hiring, Patient Hub.")
+        h.set_plan(hub=200)
+        page.clock.run_for(6 * 60 * 1000)
+        page.evaluate("window.__setVis('hidden')")
+        page.evaluate("window.__setVis('visible')")
+        h.tick(25000)
+        self.assertEqual(h.statuses(), ["Physician Hiring"])
+        self.assertEqual(h.announced(), "")
+        h.assert_clean(allow_network=True)
+
     # leftover 4: offline at the online check: try again when the device is back online
     def test_15g_offline_at_online_check(self):
         h = self.h()
