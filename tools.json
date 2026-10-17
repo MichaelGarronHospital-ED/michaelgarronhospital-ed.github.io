@@ -51,17 +51,6 @@
     "owner": "ED Administration"
   },
   {
-    "name": "ED tools passwords",
-    "group": "For the ED team",
-    "description": "Change the Leadership, ED and Guest passwords for every ED tool. Leadership only.",
-    "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/passwords.html",
-    "icon": "icons/passwords.svg",
-    "color": "gray",
-    "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
-    "owner": "ED Administration",
-    "check": false
-  },
-  {
     "name": "Patient Hub",
     "group": "For patients and families",
     "description": "A plain-language guide for patients and families.",
