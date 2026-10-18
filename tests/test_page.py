@@ -922,5 +922,17 @@ for _name in _wanted:
     globals()[_cls.__name__] = _cls
 del _cls, _name
 
+class GearLink(unittest.TestCase):
+    """Design B.7.2 (PR B): the gear opens the ED tools passwords page in this repo."""
+
+    def test_gear_opens_the_passwords_page(self):
+        root = Path(__file__).resolve().parent.parent
+        index = (root / "index.html").read_text(encoding="utf-8")
+        m = re.search(r'<a class="settings-link" href="([^"]+)"', index)
+        self.assertIsNotNone(m, "the gear link is missing")
+        self.assertEqual(m.group(1), "passwords.html")
+        self.assertTrue((root / "passwords.html").is_file())
+
+
 if __name__ == "__main__":
     unittest.main()

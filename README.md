@@ -184,11 +184,8 @@ python3 -m unittest discover -s tests -p 'test_check_tools.py'
 ## Passwords page
 
 **Address:** https://michaelgarronhospital-ed.github.io/passwords.html (Leadership only).
-**Not linked yet:** the gear on the dashboard still opens Physician Hiring's old page. A later
-pull request ("PR B") points the gear here, after the maintainer's phone check. PR B also
-flips the test that checks `index.html` does not link this page
-(`passwords/tests/unit/page.test.mjs`) and adds the gear address check to
-`tests/test_page.py` (design B.7.2).
+**Opened by the gear** at the top right of the dashboard (since 2026-10-18, after Alvin's phone
+check). `passwords/tests/unit/page.test.mjs` and `tests/test_page.py` check the gear's address.
 
 ### What it does
 

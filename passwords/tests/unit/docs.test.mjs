@@ -17,7 +17,7 @@ test("README: the honest limits, iPhone, a stuck change, PR B", () => {
   has("iPhone Safari does not show that warning");
   has("Stuck with only Go on, and nobody knows the new Leadership password");
   has("set-passwords.py --apply");
-  has("PR B also flips the test that checks `index.html` does not link this page");
+  has("**Opened by the gear** at the top right of the dashboard");
 });
 
 test("README: setting it up lists every value to fill in, the Guest check, and the right commands", () => {
