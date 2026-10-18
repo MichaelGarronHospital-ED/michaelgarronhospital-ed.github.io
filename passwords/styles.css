@@ -26,7 +26,7 @@ a:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; bo
 
 /* messages: always at the top of their step */
 .pw-msg { margin: 0; font: 400 var(--ed-text-sm)/1.45 var(--ed-font); color: var(--ed-red); text-align: left; }
-.pw-msg:empty { display: none; }
+.pw-msg:empty, #gateLead:empty { display: none; }
 .pw-msg.is-busy { color: var(--ed-ink-2); }
 .pw-msg.is-good { color: var(--ed-green); }
 .pw-lead { margin: 0 0 12px; }
@@ -45,6 +45,9 @@ a:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; bo
 .pw-status.is-quiet { color: var(--ed-ink-2); }
 .pw-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .pw-actions .ed-btn { padding: 0 16px; }
+/* Show and Copy: icon buttons with hover text, a 44 px square */
+.pw-actions .pw-icon-btn { padding: 0; width: var(--ed-tap); }
+.pw-ico { display: block; flex: none; }
 .pw-foot { margin: 24px 0 0; }
 
 /* first use */
