@@ -11,11 +11,11 @@ const readme = readFileSync(new URL("README.md", root), "utf8").replace(/\s+/g, 
 const has = (t) => assert.ok(readme.includes(t), `README lacks: ${t}`);
 
 test("README: the honest limits, iPhone, a stuck change, PR B", () => {
-  has("someone who knows only the old Leadership password can still read the saved copy for a while");
+  has("someone who knows only the old Admin password can still read the saved copy for a while");
   has("for up to about an hour after");
-  has("Choose a strong new Leadership password: three or four words.");
+  has("Choose a strong new Admin password: three or four words.");
   has("iPhone Safari does not show that warning");
-  has("Stuck with only Go on, and nobody knows the new Leadership password");
+  has("Stuck with only Go on, and nobody knows the new Admin password");
   has("set-passwords.py --apply");
   has("**Opened by the gear** at the top right of the dashboard");
 });

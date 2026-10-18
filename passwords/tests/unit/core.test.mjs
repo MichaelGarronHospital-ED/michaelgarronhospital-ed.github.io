@@ -51,8 +51,8 @@ test("validation (hiring's rules, one role at a time)", () => {
   assert.ok(validateNew(["ed"], CUR, { ed: { value: CUR.ed, repeat: CUR.ed } }).some((e) => e.includes("same as the current")));
   // a value in use now: ONE line that says both things
   const inUse = validateNew(["ed"], CUR, { ed: { value: CUR.guest, repeat: CUR.guest } });
-  assert.deepEqual(inUse, ["The new ED password is already in use. The Leadership, ED and Guest passwords must all be different, and none can be one in use now."]);
-  assert.ok(validateNew(["ed", "guest"], CUR, { ed: NEXTV.ed, guest: { value: NEXT.ed, repeat: NEXT.ed } }).includes("The Leadership, ED and Guest passwords must all be different."));
+  assert.deepEqual(inUse, ["The new ED password is already in use. The Admin, ED and Guest passwords must all be different, and none can be one in use now."]);
+  assert.ok(validateNew(["ed", "guest"], CUR, { ed: NEXTV.ed, guest: { value: NEXT.ed, repeat: NEXT.ed } }).includes("The Admin, ED and Guest passwords must all be different."));
   assert.ok(validateNew(["ed"], { ...CUR, guest: "" }, { ed: NEXTV.ed }).some((e) => e.includes("saved Guest password is missing")));
 });
 
@@ -376,7 +376,7 @@ test("Leadership stopped after the start write: OLD opens without the new value;
   const old = await device(s.store, s.auth, CUR.leadership);
   assert.equal(old.session.content.pending.next, undefined);
   assert.ok(!JSON.stringify(old.session.content).includes(NEXT.leadership), "the new value is in the opened content");
-  assert.equal(pendingText(old.session.content), "A Leadership change was started; nothing has changed yet.");
+  assert.equal(pendingText(old.session.content), "An Admin change was started; nothing has changed yet.");
   await assert.rejects(() => finishChange(old), (e) => e.code === "needs-next");
   await assert.rejects(() => old.session.write((x) => x), (e) => e.code === "needs-next");
   // the quiet check with only the OLD lock: not-done accounts with the old value, nothing stale
@@ -482,7 +482,7 @@ test("stale: typed wrong; both changed to the same value (one write); typed equa
   const same = await checkTyped(ctxOf(s), "guest", "hiring:applicant", CUR.leadership, { status: { "hiring:applicant": "refused" } });
   assert.equal(same.outcome, "same-as-other");
   assert.equal(same.otherRole, "leadership");
-  assert.equal(sameAsText("guest", "leadership"), "That is the same as the Leadership password, so Physician Hiring can't tell them apart. Set a new Guest password now.");
+  assert.equal(sameAsText("guest", "leadership"), "That is the same as the Admin password, so Physician Hiring can't tell them apart. Set a new Guest password now.");
   await assert.rejects(() => saveStale(ctxOf(s), "guest", CUR.leadership), (e) => e.code === "invalid");
   assert.equal(s.session.content.roles.guest, CUR.guest);
   // so the Change opens with the typed value as the old one
@@ -590,7 +590,7 @@ test("recovery: a vault locked with another Leadership value is replaced (gen + 
   assert.equal(o.state, "locked");
   assert.equal(o.reason, "old-password");
   assert.equal(o.expectGen, 1);
-  assert.equal(TEXT.recovery, "The saved copy was made with an older Leadership password. Type the ED and Guest passwords in use now to make a new copy.");
+  assert.equal(TEXT.recovery, "The saved copy was made with an older Admin password. Type the ED and Guest passwords in use now to make a new copy.");
   const r = await firstUse({ auth: s.auth, store: s.store, mainValue: "invented-console-lead-22", expectGen: o.expectGen }, { ed: CUR.ed, guest: CUR.guest });
   assert.equal(r.outcome, "saved");
   assert.equal(s.mem.data.gen, 2);
@@ -726,13 +726,13 @@ test("the guard: refusals remembered per account and value, forgotten when a per
 
 test("words: the Done message has no password and the warnings follow hiring", () => {
   assert.deepEqual(doneText("leadership"), {
-    works: "The new Leadership password works in Motion Voting, Physician Hiring and the Patient Hub statistics page.",
-    note: "The Leadership password for the ED tools changed today. Ask ED leadership for the new one.",
+    works: "The new Admin password works in Motion Voting, Physician Hiring and the Patient Hub statistics page.",
+    note: "The Admin password for the ED tools changed today. Ask ED leadership for the new one.",
     tell: "Tell people in person or by phone. Never email a password.",
   });
   assert.equal(doneText("guest").works, "The new Guest password works in Physician Hiring.");
-  assert.equal(differText("leadership", {}), "The ED tools passwords page, Motion Voting and Physician Hiring have different Leadership passwords. Set one new Leadership password for all of them now.");
-  assert.equal(sameAsText("ed", "leadership"), "That is the same as the Leadership password, so Motion Voting and Physician Hiring can't tell them apart. Set a new ED password now.");
+  assert.equal(differText("leadership", {}), "The ED tools passwords page, Motion Voting and Physician Hiring have different Admin passwords. Set one new Admin password for all of them now.");
+  assert.equal(sameAsText("ed", "leadership"), "That is the same as the Admin password, so Motion Voting and Physician Hiring can't tell them apart. Set a new ED password now.");
 });
 
 test("a 6 to 9 character new password is allowed (Alvin 2026-10-18: no 10-character rule)", () => {

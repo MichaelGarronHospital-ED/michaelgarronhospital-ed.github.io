@@ -28,9 +28,9 @@ test("no inline script, no inline style, no inline handler", () => {
 
 test("boot.js runs first as a classic script, then the module; the shared look before the page's own", () => {
   const scripts = [...html.matchAll(/<script ([^>]*)><\/script>/g)].map((m) => m[1]);
-  assert.deepEqual(scripts, ['src="passwords/boot.js?v=2"', 'type="module" src="passwords/app.js?v=2"']);
+  assert.deepEqual(scripts, ['src="passwords/boot.js?v=3"', 'type="module" src="passwords/app.js?v=3"']);
   const css = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(css, ["shared/ed-ui.css?v=2", "passwords/styles.css?v=2"]);
+  assert.deepEqual(css, ["shared/ed-ui.css?v=3", "passwords/styles.css?v=3"]);
 });
 
 test("the dashboard gear opens this page (PR B, after Alvin's phone check 2026-10-18)", () => {
@@ -45,3 +45,16 @@ test("styles.css uses only the shared --ed-* tokens for colour", () => {
   assert.deepEqual(vars.filter((v) => !v.startsWith("--ed-")), []);
   assert.ok(!/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i.test(css), "a raw colour");
 });
+
+test("no visible \"Leadership\" comes back; the hidden names stay (Alvin 2026-10-18: Admin)", async () => {
+  const core = await import(new URL("passwords/core.js?guard", root).href);
+  const { ROLES, ROLE_WORD, TEXT } = core;
+  for (const v of Object.values(TEXT)) if (typeof v === "string") assert.doesNotMatch(v, /Leadership/, v);
+  assert.equal(ROLE_WORD.leadership, "Admin");
+  assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ""), /Leadership/);
+  const gear = readFileSync(new URL("index.html", root), "utf8").match(/<a class="settings-link"[^>]*>/)[0];
+  assert.doesNotMatch(gear, /Leadership/);
+  assert.equal(ROLES[0], "leadership", "the role key stays: the saved copy uses it");
+  assert.equal(core.MAIN_KEY, "admin:leadership");
+});
+
