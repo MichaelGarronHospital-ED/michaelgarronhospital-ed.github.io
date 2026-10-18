@@ -397,6 +397,87 @@ for (const kind of H.browsersToRun()) {
       await finish(p);
     });
 
+    it("r2 first use with two roles whose hiring accounts differ: save the Leadership change, then the ED one", T, async () => {
+      await H.reset();
+      await H.setPassword("hiring:admin", V.other);
+      await H.setPassword("hiring:committee", V.console);
+      const p = await open();
+      await H.signIn(p, V.lead);
+      await p.waitForSelector("#fuEd", { timeout: 30000 });
+      await p.fill("#fuEd", V.ed); await p.fill("#fuGuest", V.guest); await p.click("#fuGo");
+      await H.waitDialog(p, "The Leadership password in use");
+      await p.fill("#pwTyped", V.other); await p.press("#pwTyped", "Enter");
+      await H.waitDialog(p, "The ED password in use");
+      await p.fill("#pwTyped", V.console); await p.press("#pwTyped", "Enter");
+      await H.waitDialog(p, "New Leadership password");
+      await H.saveNew(p, V.lead2);
+      await H.waitDialog(p, "Done", 90000);
+      await H.dialogClick(p, "Close");
+      await accepts("leadership", V.lead2);
+      assert.equal(await H.rowButton(p, "ed", "change").textContent(), "Set a new ED password");
+      await H.rowButton(p, "ed", "change").click();
+      await H.waitDialog(p, "New ED password");
+      await H.saveNew(p, V.ed2);
+      await H.waitDialog(p, "Done", 90000);
+      await accepts("ed", V.ed2);
+      await finish(p);
+    });
+
+    it("r2 progress reads out each account as it changes, not the whole step each time", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      await H.rowButton(p, "ed", "change").click();
+      await H.waitDialog(p, "New ED password");
+      await p.evaluate(() => {
+        window.__live = [];
+        const el = document.querySelector("#flowLive");
+        new MutationObserver(() => { if (el.textContent) window.__live.push(el.textContent); }).observe(el, { childList: true, characterData: true, subtree: true });
+      });
+      await H.saveNew(p, V.ed2);
+      await H.waitDialog(p, "Done");
+      await p.waitForFunction(() => window.__live.some((t) => t.startsWith("Done")));
+      const live = await p.evaluate(() => window.__live);
+      assert.equal(live.filter((t) => t.startsWith("Changing the ED password")).length, 1, JSON.stringify(live));
+      assert.ok(live.includes("Motion Voting, ED account: changed"), JSON.stringify(live));
+      assert.ok(live.includes("Physician Hiring, ED account: changed"), JSON.stringify(live));
+      await finish(p);
+    });
+
+    it("r2 the Finish preview hides again after 30 s", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      dropUpdateOf(p, "hiring:committee");
+      await H.changeRole(p, "ed", V.ed2);
+      await H.waitDialog(p, "Not finished");
+      await finish(p, { allowConsole: ABORTED });
+      const q = await signedIn(V.lead, { clock: true });
+      await H.rowButton(q, "ed", "finish").click();
+      await H.waitDialog(q, "Finish the change");
+      await q.click("#finShow");
+      assert.equal(await q.textContent("#finVal"), V.ed2);
+      await q.clock.fastForward(31000);
+      assert.equal(await q.$eval("#finVal [aria-hidden]", (e) => e.textContent), DOTS);
+      assert.equal(await q.textContent("#finShow"), "Show");
+      await H.dialogClick(q, "Close");
+      await finish(q);
+    });
+
+    it("r2 before Go on, an account taking neither value says to press Go on, with no field to type into", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      dropCommitsAfter(p, 1);
+      await H.changeRole(p, "leadership", V.lead2);
+      await H.waitDialog(p, "Not finished", 120000);
+      await finish(p, { allowConsole: ABORTED });
+      await H.setPassword("voting:leadership", V.console);
+      const q = await signedIn(V.lead);
+      const t = await H.rowText(q, "leadership");
+      assert.ok(t.includes("Motion Voting's Leadership account doesn't accept the saved password or the new one. Someone may have changed it another way. Press Go on first."), t);
+      assert.equal(await H.rowButton(q, "leadership", "fix").count(), 0);
+      assert.equal(await H.rowButton(q, "leadership", "finish").textContent(), "Go on");
+      await finish(q);
+    });
+
     it("r1 Return: moves to the next field, then presses the main button (first use and Change); each step is read out", T, async () => {
       await H.reset();
       const p = await open();

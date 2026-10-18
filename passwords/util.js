@@ -91,7 +91,8 @@ export function flowDialog(show, opts = {}) {
         if (opts.onClose) { try { opts.onClose(v); } catch { /* ignore */ } }
         resolve(v);
       },
-      step({ title: t, html, buttons = [], wire, focus = true }) {
+      // say: what to read out (default: the title and the message; false: nothing)
+      step({ title: t, html, buttons = [], wire, focus = true, say }) {
         if (closed) return;
         title.textContent = t || "";
         body.innerHTML = html || "";
@@ -109,8 +110,11 @@ export function flowDialog(show, opts = {}) {
           btns.appendChild(el);
         }
         if (wire) wire(body);
-        const msg = [...body.querySelectorAll(".pw-msg")].map((x) => x.textContent.trim()).find(Boolean);
-        announce([t, msg].filter(Boolean).join(". "));
+        if (typeof say === "string") announce(say);
+        else if (say !== false) {
+          const msg = [...body.querySelectorAll(".pw-msg")].map((x) => x.textContent.trim()).find(Boolean);
+          announce([t, msg].filter(Boolean).join(". "));
+        }
         wrap.scrollTop = 0;
         if (!focus) return;
         // a phone: focus the title, so the keyboard stays closed and the

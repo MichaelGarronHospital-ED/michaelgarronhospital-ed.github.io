@@ -63,6 +63,9 @@ async function firebase() {
   FB = { app, auth, au, sdk, ...lite };
   return FB;
 }
+// every account value this tab knows differs from the saved one, any role
+// (round 2 N-M1: Check first proves the other roles' accounts with these)
+const knownValues = () => Object.assign({}, ...Object.values(diffFrom));
 const ctx = (extra = {}) => ({ auth: S.adapter, session: S.session, guard: S.guard, now: iso, ...extra });
 
 // ------------------------------------------------------------------ the gate
@@ -198,7 +201,7 @@ function rowHtml(r) {
     // an account of this role takes neither value: on the Finish line (round 1 m3)
     const stuck = Q ? Q.finishing.find((k) => C.accountsFor([r]).some((a) => a.key === k)) : null;
     if (stuck) {
-      second = C.failureText({ code: "refused" }, stuck);
+      second = C.neitherText(stuck, !!p.next);   // round 2 m1: no field before Go on
       if (p.next) extra += `<button type="button" class="ed-btn ed-btn-tinted" data-act="fix" data-role="${r}" data-key="${h(stuck)}">Type the one in use</button>`;
     }
   } else if (diffFrom[r]) {
@@ -397,7 +400,7 @@ function stepNew(ctl, r, from, lead = "") {
         const errs = C.validateChange(S.session.content, r, v, rep, from, SEEN);
         if (errs.length) { showErr(errs, /don't match/.test(errs[0]) ? "pwRep" : "pwNew"); return; }
         btn.disabled = true;
-        runFlow(ctl, r, (x) => C.changePassword(x, r, v, { from }), { from, value: v });
+        runFlow(ctl, r, (x) => C.changePassword(x, r, v, { from, known: knownValues() }), { from, value: v });
       } },
     ] });
 }
@@ -408,9 +411,10 @@ async function runFlow(ctl, r, start, again = {}) {
   const state = Object.fromEntries(accts.map((a) => [a.key, "wait"]));
   const p0 = S.session.content.pending;
   if (p0) for (const k of p0.done || []) state[k] = "done";
-  let verifying = false, first = true;
+  let verifying = false, first = true, say = null;
   const paint = (text = C.TEXT.keepOpen) => {
-    ctl.step({ title: `Changing the ${w} password`, focus: first, html: `<p id="pwErr" class="pw-msg is-busy">${h(text)}</p>
+    // read out the whole step once, then only the account that just changed (round 2 m2)
+    ctl.step({ title: `Changing the ${w} password`, focus: first, say: first ? undefined : say || false, html: `<p id="pwErr" class="pw-msg is-busy">${h(text)}</p>
       <ul class="pw-steps">${accts.map((a) => `<li class="is-${state[a.key]}">${h(a.label)}: ${state[a.key] === "done" ? "changed" : state[a.key] === "now" ? "changing..." : "waiting"}</li>`).join("")}</ul>
       ${verifying ? `<p class="ed-hint">Checking each tool takes the new password...</p>` : ""}` });
     first = false;
@@ -421,7 +425,13 @@ async function runFlow(ctl, r, start, again = {}) {
   let res = null, thrown = null;
   try {
     res = await start(ctx({ onProgress: (p) => {
-      for (const a of accts) state[a.key] = p.done.includes(a.key) ? "done" : p.inProgress === a.key ? "now" : state[a.key] === "done" ? "done" : "wait";
+      say = null;
+      for (const a of accts) {
+        const was = state[a.key];
+        state[a.key] = p.done.includes(a.key) ? "done" : p.inProgress === a.key ? "now" : was === "done" ? "done" : "wait";
+        if (was !== "done" && state[a.key] === "done") say = `${a.label}: changed`;
+      }
+      if (p.verifying && !verifying) say = "Checking each tool takes the new password.";
       if (p.verifying) verifying = true;
       paint();
     } }));
@@ -508,9 +518,12 @@ function openFinish() {
 }
 // Before Finish runs, say what it sets the password to (hidden until Show), so
 // a change nobody here started can be spotted and cancelled (round 1 m1, security)
+let finTimer = null;
 function showFinish(on) {
   const el = $("finVal"), b = $("finShow"), p = S && S.session && S.session.content.pending;
+  clearTimeout(finTimer);
   if (!el || !b) return;
+  if (on) finTimer = setTimeout(() => showFinish(false), C.TIMING.showMs);   // like the rows (round 2 m5)
   if (on && p && p.next) { el.textContent = p.next; el.dataset.on = "1"; b.textContent = "Hide"; b.setAttribute("aria-label", "Hide the new password"); }
   else { el.innerHTML = dotsHtml; delete el.dataset.on; b.textContent = "Show"; b.setAttribute("aria-label", "Show the new password"); }
 }

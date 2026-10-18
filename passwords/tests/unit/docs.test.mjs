@@ -35,3 +35,11 @@ test("the workflow also runs on index.html; the test package says it is publishe
   const pkg = JSON.parse(readFileSync(new URL("passwords/tests/package.json", root), "utf8"));
   assert.match(pkg.description, /GitHub Pages publishes this folder too/);
 });
+
+test("README (round 2): PR A and the live checks come before the phone check; the salt size note", () => {
+  has("Merge PR A (this page, not linked yet), then do the live checks of B.10 step 4");
+  assert.ok(readme.indexOf("Merge PR A") < readme.indexOf("The maintainer's phone check"));
+  assert.ok(readme.indexOf("Publish the rules") < readme.indexOf("Merge PR A"));
+  has("The rules ask for a salt of at least 24 characters");
+});
+

@@ -313,12 +313,18 @@ Design `designs/passwords-design.md` (workspace, sections B.2 and B.10) has the 
    The tests still pass with the real values filled in.
 4. Publish the rules. From `passwords/`:
    `tests/node_modules/.bin/firebase deploy --only firestore:rules --project mgh-ed-admin`.
-5. The maintainer's phone check (B.10 step 5). **Before** the real Guest change and the
+5. Merge PR A (this page, not linked yet), then do the live checks of B.10 step 4 without
+   the password: the page loads, the gate shows, no console error or policy violation
+   (Chrome and Safari), a wrong password says "Incorrect password.", it refuses in a
+   frame, and a phone screen has no sideways scroll.
+6. The maintainer's phone check (B.10 step 5). **Before** the real Guest change and the
    change back, check that today's Guest password is at least 10 characters, has no word
    "password" in it, and no space at either end. If it isn't, the page would refuse to
    change it back: change it to a new value instead and keep that one.
 
 Until step 3 the page says "This page is not ready yet" and never tries to sign in.
+
+The rules ask for a salt of at least 24 characters (16 bytes in base64); design B.4 said 20.
 
 ## Hosting
 
