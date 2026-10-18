@@ -219,7 +219,9 @@ test("a check after the change that couldn't connect is not a mismatch; Finish f
   assert.equal(r.stage, "verify");
   assert.deepEqual(r.bad.map((b) => [b.key, b.why]), [["hiring:committee", "error"]]);
   assert.deepEqual(s.session.content.pending.unsure, ["hiring:committee"]);
-  assert.deepEqual(s.session.content.pending.done, ["voting:ed"]);
+  // it may well have the new value: it stays in done, so no Cancel (round 1 L-M1)
+  assert.deepEqual(s.session.content.pending.done, ["voting:ed", "hiring:committee"]);
+  assert.equal(canCancel(s.session), false);
   s.auth.log.length = 0;
   const f = await finishChange({ ...ctxOf(s), auth });
   assert.equal(f.ok, true, f.error && f.error.message);
@@ -236,7 +238,7 @@ test("an account recorded as done that no longer takes the new value says so (no
   assert.equal(f.failedAt, "voting:ed");
   assert.equal(f.error.code, "not-first-value");
   assert.equal(s.passwords["hiring:committee"], CUR.ed, "went on to change the others");
-  assert.match(failureText(f.error, f.failedAt), /set-passwords\.py --apply/);
+  assert.match(failureText(f.error, f.failedAt), /Ask the person who looks after the ED tools\.$/);
 });
 
 test("can't finish: a switched-off account and a password-rule refusal are named with the fix, and Finish works after", async () => {
@@ -260,7 +262,7 @@ test("can't finish: a switched-off account and a password-rule refusal are named
   assert.equal((await finishChange(ctxOf(s))).ok, true);
   const t = fakeAuth({ passwords: all(), ruleRefuses: "voting:ed" });
   const e = await converge(t, ACCOUNTS.find((a) => a.key === "voting:ed"), CUR.ed, NEXT.ed).catch((x) => x);
-  assert.equal(failureText(e, "voting:ed"), "Motion Voting's ED account refused the new password because of its own password rules. Ask the maintainer: set-passwords.py --apply sets all three.");
+  assert.equal(failureText(e, "voting:ed"), "Motion Voting's ED account refused the new password because of its own password rules. Ask the person who looks after the ED tools.");
 });
 
 test("part way, an account that takes neither value: the one in use is typed and goes into pending.from", async () => {
@@ -301,8 +303,16 @@ test("another device's Save gets changed-elsewhere, and reloads the latest", asy
   const s = await seeded();
   const b = await device(s.store, s.auth, CUR.leadership);
   assert.equal((await changePassword(ctxOf(s), "guest", NEXT.guest)).ok, true);
+  // Check first finds hiring's Guest account no longer takes the saved Guest
+  // value; one read shows the vault moved, so it says "changed elsewhere"
   await assert.rejects(() => changePassword(b, "ed", NEXT.ed), (e) => e.code === "changed-elsewhere");
   assert.equal(s.passwords["voting:ed"], CUR.ed, "an account changed before the write failed");
+  // with the vault not moved, a refusal is the stale flow as before
+  const c = await device(s.store, s.auth, CUR.leadership);
+  s.passwords["hiring:applicant"] = "invented-console-value-25";
+  const r = await changePassword(c, "ed", NEXT.ed);
+  assert.equal(r.stage, "check");
+  assert.equal(r.results[r.results.length - 1].key, "hiring:applicant");
   await b.session.reload();
   assert.equal(b.session.content.roles.guest, NEXT.guest);
 });
@@ -580,7 +590,7 @@ test("recovery: a vault locked with another Leadership value is replaced (gen + 
   assert.equal(o.state, "locked");
   assert.equal(o.reason, "old-password");
   assert.equal(o.expectGen, 1);
-  assert.equal(TEXT.recovery, "The saved copy was locked with an older Leadership password. Type the ED and Guest passwords in use now to make a new copy.");
+  assert.equal(TEXT.recovery, "The saved copy was made with an older Leadership password. Type the ED and Guest passwords in use now to make a new copy.");
   const r = await firstUse({ auth: s.auth, store: s.store, mainValue: "invented-console-lead-22", expectGen: o.expectGen }, { ed: CUR.ed, guest: CUR.guest });
   assert.equal(r.outcome, "saved");
   assert.equal(s.mem.data.gen, 2);
@@ -635,8 +645,12 @@ test("the page's own account: an empty uid is not set up yet; another signed-in 
 });
 
 test("the gate: not set up yet with an empty admin uid; only the pinned uid opens; plain messages", async () => {
-  assert.equal(isSetUp(), false, "config.js has no admin account yet");
-  await assert.rejects(() => signInGate(sdkFake(), {}, "x"), (e) => e.code === "not-set-up");
+  // round 1 D-M1: isSetUp against a config passed in, so this stays true after deploy
+  assert.equal(isSetUp({ admin: { apiKey: "NOT-CREATED-YET" }, uid: "invented-uid" }), false);
+  assert.equal(isSetUp({ admin: { apiKey: "invented-key" }, uid: "" }), false);
+  assert.equal(isSetUp({ admin: { apiKey: "invented-key" }, uid: "invented-uid" }), true);
+  await assert.rejects(() => signInGate(sdkFake(), {}, "x", { account: { ...MAIN_TEST, uid: "" }, ready: () => true }), (e) => e.code === "not-set-up");
+  await assert.rejects(() => signInGate(sdkFake(), {}, "x", { account: MAIN_TEST, ready: () => false }), (e) => e.code === "not-set-up");
   assert.equal(signInError({ code: "not-set-up" }), "This page is not ready yet. Ask the person who looks after the ED tools to finish setting it up.");
   const wrong = sdkFake({ signInWithEmailAndPassword: async () => ({ user: { uid: "someone-else" } }) });
   await assert.rejects(() => signInGate(wrong, {}, "x", { account: MAIN_TEST, ready: () => true }), (e) => e.code === "auth/invalid-credential");
@@ -644,7 +658,7 @@ test("the gate: not set up yet with an empty admin uid; only the pinned uid open
   const right = sdkFake({ signInWithEmailAndPassword: async () => ({ user: { uid: MAIN_TEST.uid } }) });
   assert.equal((await signInGate(right, {}, "x", { account: MAIN_TEST, ready: () => true })).uid, MAIN_TEST.uid);
   assert.equal(signInError({ code: "auth/invalid-credential" }), "Incorrect password.");
-  assert.match(signInError({ code: "auth/too-many-requests" }), /15 minutes/);
+  assert.equal(signInError({ code: "auth/too-many-requests" }), TEXT.throttled, "one wording for the pause");
 });
 
 test("the gate: 3 wrong tries, then a 30-second wait; a right one clears it", () => {

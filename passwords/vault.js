@@ -119,9 +119,15 @@ export async function seal(content, locks, gen) {
 function checkDoc(doc) {
   if (!doc || doc.v !== 1 || !Number.isInteger(doc.gen) || doc.gen < 1) throw vaultError("vault-refused");
   if (!Array.isArray(doc.locks) || doc.locks.length < 1 || doc.locks.length > MAX_LOCKS) throw vaultError("vault-refused");
+  const bytes = (t) => { try { return fromB64(t); } catch { return null; } };
   for (const l of doc.locks) {
     if (!l || typeof l.salt !== "string" || typeof l.iv !== "string" || typeof l.ct !== "string") throw vaultError("vault-refused");
     if (!Number.isInteger(l.iter) || l.iter < KDF_ITER || l.iter > MAX_ITER) throw vaultError("vault-refused");
+    // a salt or IV that doesn't decode, or is the wrong size, is a document this
+    // page would never write: refused (the page then offers a new copy), not
+    // an error that looks like a network problem (round 1 m4)
+    const salt = bytes(l.salt), iv = bytes(l.iv);
+    if (!salt || salt.length < SALT_BYTES || !iv || iv.length !== IV_BYTES || !bytes(l.ct)) throw vaultError("vault-refused");
   }
 }
 

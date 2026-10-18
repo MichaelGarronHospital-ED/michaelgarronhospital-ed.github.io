@@ -37,7 +37,7 @@
 // ============================================================================
 
 import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=1";
-import { makeLock, seal, openVault, openWithLocks } from "./vault.js?v=1";
+import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=1";
 
 export const ROLES = Object.freeze(["leadership", "ed", "guest"]);
 export const ROLE_WORD = Object.freeze({ leadership: "Leadership", ed: "ED", guest: "Guest" });
@@ -54,7 +54,9 @@ export const accountsFor = (roles) => ACCOUNTS.filter((a) => roles.includes(a.ro
 
 // The page works only once the project and its account exist (B.2): a web
 // config and the account's uid. Until then the gate says so.
-export const isSetUp = () => !!(ADMIN_FIREBASE.apiKey && ADMIN_FIREBASE.apiKey !== "NOT-CREATED-YET" && byKey(MAIN_KEY).uid);
+// (admin and uid are for the tests; the page passes neither)
+export const isSetUp = ({ admin = ADMIN_FIREBASE, uid = byKey(MAIN_KEY).uid } = {}) =>
+  !!(admin && admin.apiKey && admin.apiKey !== "NOT-CREATED-YET" && uid);
 
 // Timings for the page (B.6.2, B.6.3)
 export const TIMING = Object.freeze({ idleMs: 10 * 60000, hiddenMs: 5 * 60000, showMs: 30000, copiedMs: 2000, gatePauseMs: 30000 });
@@ -112,11 +114,13 @@ export function validateNew(roles, current, next, overrides = {}) {
 }
 
 // The vault-aware check for one role: every value some account may accept now
-// counts as in use (pending.from, the pending next, a typed stale value).
-export function validateChange(content, role, value, repeat, from = {}) {
+// counts as in use (pending.from, the pending next, a typed stale value), and
+// so does every value a person typed in this tab for any row (seen).
+export function validateChange(content, role, value, repeat, from = {}, seen = []) {
   const p = (content && content.pending) || null;
   const extra = { ...((p && p.from) || {}), ...from };
   if (p && p.next) extra["pending:next"] = p.next;
+  [...seen].forEach((v, i) => { extra[`seen:${i}`] = v; });
   return validateNew([role], content.roles, { [role]: { value, repeat } }, extra);
 }
 
@@ -134,13 +138,15 @@ export const isNetwork = (e) => !!e && /network|unavailable|deadline-exceeded/i.
 export const whyOf = (e) => (isThrottle(e) ? "throttled" : isRefusal(e) ? "refused" : isDisabled(e) ? "disabled" : isPasswordRule(e) ? "rules" : "error");
 const refusal = (extra = {}) => fail("auth/invalid-credential", "refused", extra);
 
-// What Check proves before a change: every account of the role, with its
-// current value. (Hiring also proved the other roles' hiring accounts, because
-// there the current values were typed; here they come from the vault and the
-// quiet check proves them when the page opens.)
+// What Check proves before a change: every account of the role, then the
+// Physician Hiring account of each other role, so "all different" rests on
+// values an account actually accepted (review M1; round 1 m7: a value saved
+// here may be out of date). Values already refused in this tab are not tried
+// again (the guard), they stop Check at once.
 // skip: accounts not to prove with the current value (when finishing: those
 // that may already have the new one)
-export const checkAccountsFor = (roles, skip = []) => accountsFor(roles).filter((a) => !skip.includes(a.key));
+export const checkAccountsFor = (roles, skip = []) => [...accountsFor(roles),
+  ...ACCOUNTS.filter((a) => a.project === "hiring" && !roles.includes(a.role))].filter((a) => !skip.includes(a.key));
 
 // Step 1, "Check first": prove every account with its current value; change
 // nothing, keep nothing. Stops at the first refusal. -> { ok, results: [{ key, ok, why }] }
@@ -190,12 +196,13 @@ export async function applyChange(auth, roles, current, next, { overrides = {}, 
   const done = new Set(progress.done || []), unsure = new Set(progress.unsure || []);
   const changed = [];
   for (const a of accountsFor(roles)) {
-    const state = done.has(a.key) ? "done" : progress.inProgress === a.key || unsure.has(a.key) ? "inProgress" : "todo";
+    // unsure first: such an account is also recorded as done (round 1 L-M1)
+    const state = progress.inProgress === a.key || unsure.has(a.key) ? "inProgress" : done.has(a.key) ? "done" : "todo";
     try {
       await record({ done: [...done], inProgress: a.key });
       await converge(auth, a, currentFor(a, current, overrides), next[a.role].value, state);
       done.add(a.key); changed.push(a.key);
-      await record({ done: [...done], inProgress: null });
+      await record({ done: [...done], inProgress: null, settled: a.key });
     } catch (e) {
       return { changed, done: [...done], failedAt: a.key, error: e };
     }
@@ -267,6 +274,11 @@ export function guarded(auth, guard, { skipKnown = false } = {}) {
 }
 
 // ---- the open vault in this tab ---------------------------------------------------
+// The value each lock object of this tab was made from (memory only), so that
+// checking a lock's pending.next costs no extra PBKDF2 when this tab made it.
+const MADE_FROM = new WeakMap();
+const madeFrom = (lock, value) => { if (lock) MADE_FROM.set(lock, value); return lock; };
+
 // Holds the decrypted content, the document number (gen) last seen, and the
 // lock keys this tab can seal with (in memory only). Every write goes through
 // write(): a transaction that stops with "changed-elsewhere" if another device
@@ -280,6 +292,12 @@ export class Session {
 
   // Learn the content and which of the document's locks this tab can seal.
   // The OLD lock of a Leadership change is the one without pending.next.
+  // Round 1 S-M1: a lock may hold a Leadership pending.next only if that very
+  // value is the lock's own key. Anyone who knows only the OLD Leadership
+  // password could otherwise plant a "change" under the OLD lock with a new
+  // value they chose, and Finish would set every Leadership account to it. A
+  // next that doesn't open its own lock is dropped: that content is the
+  // honest "nothing changed yet" state (Go on with the new value, or Cancel).
   async adopt(doc, known) {
     const mine = []; let best = null;
     for (const l of doc.locks) {
@@ -287,11 +305,26 @@ export class Session {
       if (!k) continue;
       const r = await openWithLocks({ ...doc, locks: [l] }, [k]);
       if (!r) continue;
-      const p = r.content.pending;
+      let content = r.content;
+      const p0 = content.pending;
+      if (p0 && p0.role === "leadership" && p0.next) {
+        let honest;
+        if (MADE_FROM.has(k)) honest = MADE_FROM.get(k) === p0.next;
+        else {
+          let nl = null;
+          try { nl = await makeLock(String(p0.next), { salt: l.salt, iter: l.iter }); } catch { nl = null; }
+          honest = !!(nl && (await openWithLocks({ ...doc, locks: [l] }, [nl])));
+          if (honest) madeFrom(k, p0.next);
+        }
+        if (!honest) content = withoutNext(content);
+      }
+      const p = content.pending;
       const hide = !!(p && p.role === "leadership" && !p.next);
       const { hideNext, ...lock } = k;
-      mine.push(hide ? { ...lock, hideNext: true } : lock);
-      if (!best || !hide) best = r.content;
+      const kept = hide ? { ...lock, hideNext: true } : lock;
+      if (MADE_FROM.has(k)) madeFrom(kept, MADE_FROM.get(k));
+      mine.push(kept);
+      if (!best || !hide) best = content;
     }
     if (!best) throw fail("locked-out", "This page can't open the saved copy any more. Sign in again.");
     this.doc = doc; this.gen = doc.gen; this.content = best; this.locks = mine;
@@ -339,7 +372,7 @@ export class Session {
     try { lock = await makeLock(String(typed || ""), { salt: other.salt, iter: other.iter }); } catch { lock = null; }
     const r = lock && (await openWithLocks({ ...this.doc, locks: [other] }, [lock]));
     if (!r || !r.content.pending || r.content.pending.next !== typed) throw fail("not-next", "That is not the new Leadership password typed when the change started.");
-    await this.adopt(this.doc, [...this.locks, lock]);
+    await this.adopt(this.doc, [...this.locks, madeFrom(lock, typed)]);
     return this;
   }
 
@@ -361,7 +394,7 @@ export async function openSession({ store, password }) {
   }
   if (!opened) return { state: "locked", reason: "old-password", expectGen: doc.gen };
   const session = new Session({ store, mainValue: password });
-  await session.adopt(doc, [opened.lock]);
+  await session.adopt(doc, [madeFrom(opened.lock, password)]);
   return { state: "open", session };
 }
 
@@ -375,8 +408,8 @@ export function expectedFor(content, a) {
   if (!p || p.role !== a.role) return [{ value: content.roles[a.role], kind: "old" }];
   const old = { value: currentFor(a, content.roles, p.from || {}), kind: "old" };
   const nxt = p.next ? { value: p.next, kind: "next" } : null;
-  if ((p.done || []).includes(a.key)) return nxt ? [nxt] : [];
   if (p.inProgress === a.key || (p.unsure || []).includes(a.key)) return nxt ? [nxt, old] : [old];
+  if ((p.done || []).includes(a.key)) return nxt ? [nxt] : [];
   return [old];
 }
 
@@ -455,7 +488,9 @@ export async function startChange({ session, now = today }, role, value, from = 
   if (role === "leadership") {
     if (session.locks.length !== 1) throw fail("bad-locks", "Reload the page and try again.");
     const { hideNext, ...old } = session.locks[0];
-    locks = [{ ...old, hideNext: true }, await makeLock(value)];
+    const oldLock = { ...old, hideNext: true };
+    if (MADE_FROM.has(session.locks[0])) madeFrom(oldLock, MADE_FROM.get(session.locks[0]));
+    locks = [oldLock, madeFrom(await makeLock(value), value)];
   }
   const f = cleanFrom(c, role, from);
   return session.write((x) => {
@@ -477,7 +512,7 @@ export async function runChange({ auth, session, guard, now = today, onProgress 
   const record = async (prog) => {
     const dropOld = role === "leadership" && prog.done.includes(MAIN_KEY) && session.locks.some((l) => l.hideNext);
     await session.write((x) => {
-      x.pending = { ...x.pending, done: prog.done, inProgress: prog.inProgress, unsure: (x.pending.unsure || []).filter((k) => !prog.done.includes(k)) };
+      x.pending = { ...x.pending, done: prog.done, inProgress: prog.inProgress, unsure: (x.pending.unsure || []).filter((k) => k !== prog.settled) };
       return x;
     }, dropOld ? { locks: session.locks.filter((l) => !l.hideNext) } : {});
     if (role === "leadership" && prog.done.includes(MAIN_KEY)) session.mainValue = p0.next;
@@ -489,9 +524,10 @@ export async function runChange({ auth, session, guard, now = today, onProgress 
   const bad = await verify(ad, [role], next);
   if (bad.length) {
     // not confirmed is not the same as wrong: Finish tries those with the new
-    // value first
+    // value first. They stay in done (they may well have it: no Cancel now)
+    // and are listed in unsure beside it (round 1 L-M1).
     const keys = bad.map((b) => b.key);
-    const doneNow = r.done.filter((k) => !keys.includes(k));
+    const doneNow = r.done;
     let error = null;
     try {
       await session.write((x) => { x.pending = { ...x.pending, done: doneNow, inProgress: null, unsure: keys }; return x; });
@@ -511,7 +547,14 @@ export async function runChange({ auth, session, guard, now = today, onProgress 
 // at Check is { ok: false, stage: "check", results } (the stale flow).
 export async function changePassword(ctx, role, value, { from = {} } = {}) {
   const pre = await checkFirst(ctx, role, from);
-  if (!pre.ok) return { ok: false, stage: "check", results: pre.results };
+  if (!pre.ok) {
+    // a refusal may only mean another device changed a password meanwhile:
+    // one read of the vault tells (then it is "changed elsewhere", not stale)
+    let live = null;
+    try { live = await ctx.session.store.read(); } catch { live = null; }
+    if (live && live.gen !== ctx.session.gen) throw fail("changed-elsewhere", TEXT.changedElsewhere);
+    return { ok: false, stage: "check", results: pre.results };
+  }
   await startChange(ctx, role, value, from);
   return runChange(ctx);
 }
@@ -529,7 +572,7 @@ export async function finishChange(ctx) {
 // One write drops pending (and for Leadership the NEW lock).
 export function canCancel(session) {
   const p = session.content && session.content.pending;
-  if (!p || (p.done || []).length || p.inProgress) return false;
+  if (!p || (p.done || []).length || p.inProgress || (p.unsure || []).length) return false;
   // Leadership: only a tab holding the OLD lock can keep it (a tab that opened
   // only the NEW one can't seal the OLD one again)
   if (p.role === "leadership") return session.locks.some((l) => l.hideNext);
@@ -579,7 +622,10 @@ export async function fixAccount({ auth, session, guard }, key, typed) {
 export async function checkTyped({ auth, session, guard }, role, key, typed, { status = {}, known = {} } = {}) {
   const c = session.content, a = byKey(key);
   if (!a || a.role !== role) throw fail("not-needed", "Nothing to check.");
+  // never during a pending change: not for its role (that row offers Finish),
+  // and not for another (round 1 m4: the result could not be saved anyway)
   if (c.pending && c.pending.role === role) throw fail("pending-role", "Finish this change first.");
+  if (c.pending) throw fail("pending-other", blockedBy(c, role));
   const k = { ...known };
   const ad = guarded(auth, guard);
   const tryOne = async (acct, v) => {
@@ -681,7 +727,7 @@ export async function firstUse({ auth, store, guard, mainValue, expectGen = 0 },
   const gen = (expectGen || 0) + 1;
   const doc = await store.write(expectGen || 0, async () => ({ v: 1, gen, locks: await seal(content, [lock], gen) }));
   const session = new Session({ store, mainValue });
-  await session.adopt(doc, [lock]);
+  await session.adopt(doc, [madeFrom(lock, mainValue)]);
   return { outcome: "saved", session, differ, proven: pr };
 }
 
@@ -743,8 +789,7 @@ export function signInError(e) {
   if (c === "not-set-up") return "This page is not ready yet. Ask the person who looks after the ED tools to finish setting it up.";
   if (c === "app/sdk-unreachable")
     return "Couldn't load the sign-in service. A hospital network, VPN or content blocker may be blocking www.gstatic.com. Try mobile data.";
-  if (c.includes("too-many-requests"))
-    return "Too many sign-in attempts. The server has temporarily blocked this device. Wait about 15 minutes, then try ONCE.";
+  if (c.includes("too-many-requests")) return TEXT.throttled;   // one wording everywhere
   if (c.includes("network")) return "Network problem. Check your connection and try again.";
   if (c.includes("user-disabled")) return "The Leadership account is switched off. The department account can switch it back on in the Firebase console.";
   if (isRefusal(e)) return "Incorrect password.";
@@ -777,7 +822,7 @@ export const TEXT = Object.freeze({
   gateLead: "Enter the Leadership password to see and change the ED tools passwords.",
   opening: "Opening...",
   firstUse: "First time here. Type the ED and Guest passwords in use now. This page checks them with every tool, then keeps an encrypted copy so Leadership can see them here.",
-  recovery: "The saved copy was locked with an older Leadership password. Type the ED and Guest passwords in use now to make a new copy.",
+  recovery: "The saved copy was made with an older Leadership password. Type the ED and Guest passwords in use now to make a new copy.",
   refusedDoc: "The saved copy can't be opened. Type the ED and Guest passwords in use now to make a new copy.",
   changedElsewhere: "This was just changed on another device. Here is the latest.",
   signedOut: "You were signed out, probably because a password changed.",
@@ -792,8 +837,8 @@ export const TEXT = Object.freeze({
   idleOut: "You were signed out because the page was not used for 10 minutes. Sign in again to go on.",
   hiddenOut: "You were signed out because the page was in the background for 5 minutes. Sign in again to go on.",
   loggedOut: "You are signed out.",
-  sameInUse: "Two of the passwords you typed are the same. The Leadership, ED and Guest passwords must all be different. Check each was typed right. If two tools really use the same one, ask the maintainer: set-passwords.py --apply sets all three.",
-  brokenCopy: "The saved copy can't be opened or replaced from this page. Ask the maintainer: set-passwords.py --apply makes a new one.",
+  sameInUse: "Two of the passwords you typed are the same. The Leadership, ED and Guest passwords must all be different. Check each was typed right. If two tools really use the same one, ask the person who looks after the ED tools.",
+  brokenCopy: "The saved copy can't be opened or replaced from this page. Ask the person who looks after the ED tools.",
   noConnection: "Couldn't reach the sign-in service. Check the connection and try again.",
   noSave: "Couldn't save. Check the connection and try again.",
   savedStale: "Saved. This page now has the password every tool uses.",
@@ -835,10 +880,10 @@ export function failureText(error, key) {
   if (code === "changed-elsewhere") return TEXT.changedElsewhere;
   if (code === "signed-out" || code === "locked-out") return TEXT.signedOut;
   if (isDisabled(error)) return `${who} is switched off. Switch it on in the Firebase console (project ${PROJECT_ID[a ? a.project : "admin"]}, Authentication, Users), then press Finish.`;
-  if (isPasswordRule(error)) return `${who} refused the new password because of its own password rules. Ask the maintainer: set-passwords.py --apply sets all three.`;
-  if (isThrottle(error)) return "Firebase has paused sign-ins from this device for about 15 minutes. Wait, then press Finish once.";
+  if (isPasswordRule(error)) return `${who} refused the new password because of its own password rules. Ask the person who looks after the ED tools.`;
+  if (isThrottle(error)) return TEXT.throttled;
   if (code === "refused") return `${who} doesn't accept the saved password or the new one. Someone may have changed it another way. Type the one in use.`;
-  if (code === "not-first-value") return `${who} doesn't accept the new password any more. Someone may have changed it another way. Ask the maintainer: set-passwords.py --apply sets all three.`;
+  if (code === "not-first-value") return `${who} doesn't accept the new password any more. Someone may have changed it another way. Ask the person who looks after the ED tools.`;
   if (code === "mismatch") return `${who} didn't take the new password. Press Finish to try again.`;
   if (isNetwork(error)) return "The connection dropped. Press Finish to go on.";
   return "Something went wrong. Press Finish to try again.";
@@ -856,7 +901,7 @@ export function doneText(role) {
 export function changeWarnings(role) {
   const warn = [];
   if (role === "leadership" || role === "ed") warn.push("Everyone signed in with the old password will be asked for the new one within about an hour, including phones signed in to Motion Voting. Don't do this on a voting day.");
-  if (role === "guest") warn.push("Applicants who have the old Guest password won't be able to sign in. Send them the new one.");
+  if (role === "guest") warn.push("Applicants who have the old Guest password won't be able to sign in. Tell them the new one in person or by phone.");
   if (role === "leadership") warn.push("Patient Hub statistics follow this password automatically.");
   return warn;
 }
