@@ -1,0 +1,36 @@
+rules_version = '2';
+// ED tools passwords vault (project mgh-ed-admin). Only the one Leadership account, by uid.
+// NEVER delete that account: a new one has a new uid (README "Passwords page").
+// Salt at least 24 characters: 16 bytes in base64 (design B.4 said 20; review round 2).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isLeadership() {
+      return request.auth != null
+        && request.auth.uid == '97uKphgOnYOgsCIQ1oWInDtCpy03'
+        && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+    function lockOk(l) {
+      return l is map && l.keys().hasOnly(['salt', 'iter', 'iv', 'ct'])
+        && l.keys().hasAll(['salt', 'iter', 'iv', 'ct'])
+        && l.salt is string && l.salt.size() >= 24 && l.salt.size() <= 64
+        && l.iter is int && l.iter >= 600000 && l.iter <= 10000000
+        && l.iv is string && l.iv.size() >= 16 && l.iv.size() <= 32
+        && l.ct is string && l.ct.size() <= 16384;
+    }
+    function shapeOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['v', 'gen', 'updatedAt', 'locks'])
+        && d.keys().hasAll(['v', 'gen', 'updatedAt', 'locks'])
+        && d.v == 1 && d.gen is int && d.updatedAt == request.time
+        && d.locks is list && d.locks.size() >= 1 && d.locks.size() <= 2
+        && lockOk(d.locks[0]) && (d.locks.size() == 1 || lockOk(d.locks[1]));
+    }
+    match /vault/main {
+      allow get:    if isLeadership();
+      allow create: if isLeadership() && shapeOk() && request.resource.data.gen == 1;
+      allow update: if isLeadership() && shapeOk() && request.resource.data.gen == resource.data.gen + 1;
+      allow list, delete: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

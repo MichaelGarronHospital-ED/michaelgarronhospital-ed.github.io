@@ -1,3 +1,10 @@
 # Python caches made by running the check and the tests
 __pycache__/
 *.pyc
+
+# The passwords page's dev-only test tools and what the tests build (design B.6.1).
+# GitHub Pages publishes everything tracked, so none of these may ever be committed.
+passwords/tests/node_modules/
+passwords/tests/site*/
+*.log
+firestore-debug.log

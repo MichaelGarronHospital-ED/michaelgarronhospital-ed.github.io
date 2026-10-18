@@ -6,7 +6,9 @@ Emergency Department. It is a page of tiles; each tile links to one tool.
 **Live:** https://michaelgarronhospital-ed.github.io/
 
 This repo only holds the dashboard. Each tool has its own repo, its own data
-and its own sign-in. The dashboard stores no passwords, no data and no logins.
+and its own sign-in. This repo holds no passwords, no data and no logins. The one
+sign-in page here, the passwords page, keeps its encrypted copy in a separate Firebase
+project (see "Passwords page" below).
 
 ## The tools
 
@@ -155,7 +157,9 @@ the tool and how they sign in. The check reminds you if a tool is missing from i
   password, and Firebase
   refuses changes from anyone not signed in as leadership). Never rely on an unusual
   address alone: this repo and the tool repos are public.
-- Keep the dashboard free of secrets, sign-in logic and tool data.
+- Keep the dashboard free of secrets, sign-in logic and tool data. The only exception is
+  the passwords page (`passwords.html`, `passwords/`), which signs in to Firebase; it still
+  never holds a password in the repo.
 
 ### Preview locally
 
@@ -176,6 +180,151 @@ python3 -m unittest discover -s tests -p 'test_check_tools.py'
 ```
 
 `bash ../check-all.sh` runs all of these.
+
+## Passwords page
+
+**Address:** https://michaelgarronhospital-ed.github.io/passwords.html (Leadership only).
+**Not linked yet:** the gear on the dashboard still opens Physician Hiring's old page. A later
+pull request ("PR B") points the gear here, after the maintainer's phone check. PR B also
+flips the test that checks `index.html` does not link this page
+(`passwords/tests/unit/page.test.mjs`) and adds the gear address check to
+`tests/test_page.py` (design B.7.2).
+
+### What it does
+
+Anyone with the Leadership password signs in and sees the three shared passwords
+(Leadership, ED, Guest), each hidden as 10 dots, with Show, Copy and Change. Change asks
+only for the new password twice: the page signs in to each account with the saved current
+value seconds before changing it, in a fixed order, so Physician Hiring, Motion Voting and
+the Patient Hub statistics page always end up with the same three passwords.
+
+- **Keep the page open until it says Done.** A computer warns before closing the page
+  while a change runs; iPhone Safari does not show that warning.
+- **If a change stops part way** (a closed tab, a lost connection): open the page on any
+  device and press **Finish the change**. It first shows what it sets the password to
+  (hidden until Show), so a change nobody here started can be spotted. Nothing needs
+  typing, except in one case: a Leadership change stopped before anything changed asks
+  for the new Leadership password again (**Go on**), or offers **Cancel this change**.
+- **Stuck with only Go on, and nobody knows the new Leadership password:** the way out is
+  the maintainer's `set-passwords.py --apply` (in the workspace), which sets all three
+  passwords and makes a new saved copy.
+- **If a tool's password was changed another way** (the Firebase console, the maintainer's
+  script), the page says which tool no longer takes the saved one and asks for the one in
+  use. If the tools then disagree, it asks for one new password for all of them.
+- **First time, or after the Leadership password was changed outside this page:** the page
+  asks for the ED and Guest passwords in use now, checks them with every tool, and saves a
+  new encrypted copy.
+
+### How it works
+
+- One sign-in page in this repo: `passwords.html` with `passwords/`. Plain files, no build.
+- It signs in to one account, `leadership@mgh-ed-admin.invalid`, in its own free Firebase
+  project **`mgh-ed-admin`** ("MGH ED Admin", Spark plan, Firestore in Montreal). That
+  project holds one document, `vault/main`: the three passwords, **encrypted in the
+  browser** with a key made from the Leadership password (600,000 rounds). Firebase only
+  ever sees the scrambled copy. The rules (`passwords/firestore.rules`) let only that one
+  account, known by its uid, read or write it.
+- To change a tool's password it signs in to that tool's account in a separate,
+  memory-only helper. It never reads or writes Physician Hiring's or Motion Voting's data.
+- **No password is ever in this repo**, in a test, or in a log. The sign-in lasts while
+  the tab is open; a reload, Log out, 10 minutes without use or 5 minutes in the
+  background signs out.
+- **Never delete the `mgh-ed-admin` account.** The rules and `passwords/config.js` know
+  it by its uid; a new account gets a new uid and the page refuses it until both are
+  updated (`set-passwords.py --apply` recreates it and says "Republish the rules with this
+  uid"). A test keeps the uid in `config.js` equal to the one in `firestore.rules`.
+
+### Honest limits
+
+- Anyone with the Leadership password can see the ED and Guest passwords. That is the
+  point: only Leadership-password holders get in.
+- Whoever can read the scrambled copy (Owners of `mgh-ed-admin`, Google) could try to
+  guess the Leadership password offline. 600,000 rounds per guess makes a three or four
+  word password slow to guess, not impossible. Those Owners can already reset any account.
+- An Owner restoring an old copy of the document makes the page show old values; the
+  check when the page opens reports them.
+- While the tab is open the passwords are in its memory. Copy uses the clipboard, which
+  Apple devices may share between devices.
+- This page shares its web address with Physician Hiring and Motion Voting: a flaw in any
+  ED tool page could reach this one. It refuses to run in a frame and has a strict
+  content policy, which help.
+- Anyone who can change this repo can change the page. Review every change to
+  `passwords.html` and `passwords/` with care.
+- During a Leadership change, someone who knows only the old Leadership password can still
+  read the saved copy for a while: from the start of the change until the page's own
+  account has the new password, and for up to about an hour after (a sign-in stays valid
+  that long). They could then try to guess the new Leadership password offline. Choose a
+  strong new Leadership password: three or four words.
+
+### Files
+
+| File | What it does |
+|---|---|
+| `passwords.html` | The page, with its content policy. |
+| `passwords/boot.js` | Runs first: refuses to run in a frame, and says so if the page didn't finish loading. |
+| `passwords/app.js` | Sign-in, the three rows and the dialogs. |
+| `passwords/core.js` | Every rule of a change (a port of Physician Hiring's `js/passwords.js`) and every message. |
+| `passwords/vault.js` | The encryption. |
+| `passwords/store.js` | Reads the vault once, writes it in a way that notices another device's change. |
+| `passwords/util.js`, `passwords/styles.css` | Helpers and layout (only the shared `--ed-*` look). |
+| `passwords/config.js` | Public web configs and the six accounts (emails and uids). No password. |
+| `passwords/vault-cli.mjs` | For the maintainer's `set-passwords.py`: seals and checks the vault from a terminal. |
+| `passwords/firestore.rules`, `firebase.json`, `.firebaserc` | The vault rules and the emulator settings. |
+| `passwords/tests/` | Tests only (dev-only tools). GitHub Pages publishes this folder too, as it publishes every file in this public repo; nothing in it is secret. |
+| `.github/workflows/passwords.yml` | Runs the tests on GitHub when these files change (free, no schedule). |
+
+Every script on the page carries the same `?v=` number; change them all together (a test
+checks).
+
+### Tests (on a computer)
+
+```sh
+cd passwords/tests
+mkdir -p node_modules && xattr -w 'com.apple.fileprovider.ignore#P' 1 node_modules   # keep it out of iCloud (Mac)
+npm ci
+npx playwright-core install chromium webkit   # the test browsers, once (skip Chromium if CHROME is set)
+npm run test:unit     # rules of a change, encryption, hygiene, about 15 seconds
+npm run test:rules    # the vault rules in the Firestore emulator
+npm run test:flows    # the page in Chromium and WebKit against the emulators
+npm test              # all three
+```
+
+The emulators run as the demo project `demo-mgh-ed-admin` (never a real one) on ports
+8086 (Firestore), 9096 (Auth), 4406 and 4506 (their helpers); the page is served on 8097.
+`FLOW_BROWSERS=chromium` runs one browser; `CHROME=/path/to/chrome` uses that Chrome.
+Every value in the tests is invented.
+
+### Setting it up (once, by the maintainer)
+
+Design `designs/passwords-design.md` (workspace, sections B.2 and B.10) has the steps:
+
+1. The department account creates the project (B.2.2 A and B).
+2. The account: `set-passwords.py --create-admin-account` (workspace). It prints the uid.
+3. **Fill in, all in one commit:**
+   - `passwords/config.js`: the `ADMIN_FIREBASE` values (`apiKey`, `appId`, from
+     `apps:sdkconfig`), and the uid on the `admin:leadership` line;
+   - `passwords/firestore.rules`: the same uid in place of `ADMIN_UID_NOT_SET`;
+   - the workspace's `role-accounts.json`: the same uid as the "admin" account (a test
+     compares it when the file is there);
+   - this README: remove "(not created yet)" from the Firebase line under "Ownership and
+     handover";
+   - if this page was ever published before with the placeholders, bump every `?v=` in
+     `passwords.html` and `passwords/` (a test keeps them equal).
+   The tests still pass with the real values filled in.
+4. Publish the rules. From `passwords/`:
+   `tests/node_modules/.bin/firebase deploy --only firestore:rules --project mgh-ed-admin`.
+5. Merge PR A (this page, not linked yet), then do the live checks of B.10 step 4 without
+   the password: the page loads, the gate shows, no console error or policy violation
+   (Chrome and Safari), a wrong password says "Incorrect password.", it refuses in a
+   frame, and a phone screen has no sideways scroll.
+6. The maintainer's phone check (B.10 step 5). **Before** the real Guest change and the
+   change back, check that today's Guest password is at least 10 characters, has no word
+   "password" in it, and no space at either end. If it isn't, the page would refuse to
+   change it back: change it to a new value instead and keep that one.
+
+Until step 3 the page says "This page is not ready yet" and never tries to sign in.
+
+The rules ask for a salt of at least 24 characters (16 bytes in base64); design B.4 said 20.
 
 ## Hosting
 
@@ -227,7 +376,7 @@ That mailbox is the login for a department account on each service:
 | Service | Department account | Role |
 |---|---|---|
 | GitHub (this org) | `MGH-ED-Admin` | Owner |
-| Firebase: `ed-motion-voting-99b96` (voting), `mgh-ed-hiring` (hiring) | Google account on the mailbox | Owner |
+| Firebase: `ed-motion-voting-99b96` (voting), `mgh-ed-hiring` (hiring), `mgh-ed-admin` (passwords page) | Google account on the mailbox | Owner (the only one for `mgh-ed-admin`) |
 | Cloudflare | Account on the mailbox | Owner. Patient Hub runs here (project `mgh-ed-patient-hub`) since 2026-10-14. The old address `mgh-ed-patient-guide.pages.dev` only redirects and is due to be retired around 2027-01-14. |
 
 - Every department account has two-factor sign-in. Its password and backup

@@ -1,0 +1,6 @@
+{
+  "name": "ed-tools-passwords-page",
+  "private": true,
+  "type": "module",
+  "description": "Tells Node that the page's .js files are ES modules (for vault-cli.mjs and the tests). No dependencies; the page needs no build."
+}
