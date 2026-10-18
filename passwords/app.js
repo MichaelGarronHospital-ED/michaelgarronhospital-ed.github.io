@@ -9,10 +9,10 @@
 //  minutes without use (no change running) or 5 minutes in the background
 //  drops it all and shows the gate again.
 // ============================================================================
-import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=4";
-import * as C from "./core.js?v=4";
-import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=4";
-import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=4";
+import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=5";
+import * as C from "./core.js?v=5";
+import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=5";
+import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=5";
 
 // The test build points every app at the local emulators by replacing the
 // next line (passwords/tests/make-site.mjs). Live it is always null.
@@ -34,7 +34,7 @@ const ICON = {
 // the inside of an icon button: the picture and the word (read out, not shown)
 const iconInner = (kind, word) => `${ICON[kind]}<span class="pw-sr">${word}</span>`;
 const ROW_INFO = {
-  leadership: "Physician Hiring for admins, Motion Voting settings and the Patient Hub statistics page.",
+  leadership: "Physician Hiring for admins, the Motion Voting Admin console and the Patient Hub statistics page.",
   ed: "Physician Hiring for the committee, and Motion Voting.",
   guest: "Physician Hiring, for applicants to book their times.",
 };
@@ -282,7 +282,9 @@ async function copyValue(r, btn) {
   try {
     if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error("no clipboard");
     await navigator.clipboard.writeText(v);
-    const again = btn.getAttribute("aria-label");
+    // Rebuilt from the role, never read back off the button: a second press
+    // within the "Copied" moment would otherwise keep "Copied" for good.
+    const again = `Copy the ${C.ROLE_WORD[r]} password`;
     btn.innerHTML = iconInner("copied", "Copied");
     btn.setAttribute("aria-label", "Copied");
     btn.title = "Copied";
