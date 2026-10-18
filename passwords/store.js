@@ -21,11 +21,14 @@ export const VAULT_ID = "main";
 const fail = (code, message) => Object.assign(new Error(message), { code });
 
 // The lite SDK for the page (no live listeners, no offline cache).
-// importer is injectable for tests.
-export async function firestoreLite(app, { importer = (u) => import(u) } = {}) {
+// importer is injectable for tests; emulator ({ host, port }) only in the
+// test build of the page.
+export async function firestoreLite(app, { importer = (u) => import(u), emulator = null } = {}) {
   const f = await importer(SDK_BASE + "firebase-firestore-lite.js");
+  const db = f.getFirestore(app);
+  if (emulator) f.connectFirestoreEmulator(db, emulator.host, emulator.port);
   return {
-    db: f.getFirestore(app),
+    db,
     fs: { doc: f.doc, getDoc: f.getDoc, runTransaction: f.runTransaction, serverTimestamp: f.serverTimestamp },
   };
 }

@@ -385,7 +385,8 @@ export function expectedFor(content, a) {
 //      stale: { <role>: [keys] }, finishing: [keys], stopped: "throttled" | null }
 // A refusal for the role of a pending change goes on the Finish line
 // (finishing), never into stale. onResult(r) is called after each account.
-export async function quietCheck({ auth, session, guard }, { onResult = () => {} } = {}) {
+// roles: only these roles' accounts (the page checks one row at a time).
+export async function quietCheck({ auth, session, guard }, { onResult = () => {}, roles = ROLES } = {}) {
   const content = session.content;
   const ad = guarded(auth, guard, { skipKnown: true });
   const out = { results: [], stale: {}, finishing: [], stopped: null };
@@ -397,7 +398,7 @@ export async function quietCheck({ auth, session, guard }, { onResult = () => {}
     }
     onResult(r);
   };
-  for (const a of ACCOUNTS) {
+  for (const a of ACCOUNTS.filter((x) => roles.includes(x.role))) {
     const tries = expectedFor(content, a);
     if (!tries.length) continue;
     const finishing = !!(content.pending && content.pending.role === a.role);
@@ -787,6 +788,18 @@ export const TEXT = Object.freeze({
   notNext: "That is not the new Leadership password typed when the change started.",
   throttled: "Firebase has paused sign-ins from this device for about 15 minutes. Wait, then try once.",
   frame: "Open this page on its own.",
+  notReady: "This page is not ready yet. Ask the person who looks after the ED tools to finish setting it up.",
+  idleOut: "You were signed out because the page was not used for 10 minutes. Sign in again to go on.",
+  hiddenOut: "You were signed out because the page was in the background for 5 minutes. Sign in again to go on.",
+  loggedOut: "You are signed out.",
+  sameInUse: "Two of the passwords you typed are the same. The Leadership, ED and Guest passwords must all be different. Check each was typed right. If two tools really use the same one, ask the maintainer: set-passwords.py --apply sets all three.",
+  brokenCopy: "The saved copy can't be opened or replaced from this page. Ask the maintainer: set-passwords.py --apply makes a new one.",
+  noConnection: "Couldn't reach the sign-in service. Check the connection and try again.",
+  noSave: "Couldn't save. Check the connection and try again.",
+  savedStale: "Saved. This page now has the password every tool uses.",
+  sameAsSaved: "That is the password saved here, so nothing needs to change.",
+  goOn: "A Leadership change was started on another device and nothing has changed yet. To go on, type the new Leadership password again. Or cancel the change.",
+  cancelAsk: "Nothing has changed in any tool yet. Cancel this change?",
 });
 
 export const roleTools = (r) => { const t = [...new Set(accountsFor([r]).filter((a) => !a.main).map((a) => TOOL_OF[a.project]))]; if (r === "leadership") t.push("the Patient Hub statistics page"); return t; };
@@ -846,4 +859,14 @@ export function changeWarnings(role) {
   if (role === "guest") warn.push("Applicants who have the old Guest password won't be able to sign in. Send them the new one.");
   if (role === "leadership") warn.push("Patient Hub statistics follow this password automatically.");
   return warn;
+}
+// Check first (or first use) stopped before anything changed: why, in words.
+// why: "refused" | "throttled" | "disabled" | "error"
+export function checkFailText(why, key) {
+  const a = byKey(key);
+  const who = a ? `${toolTitle(a)}'s ${ROLE_WORD[a.role]} account` : "An account";
+  if (why === "throttled") return TEXT.throttled;
+  if (why === "disabled") return `${who} is switched off, so nothing was changed. Switch it on in the Firebase console (project ${PROJECT_ID[a ? a.project : "admin"]}, Authentication, Users), then try again.`;
+  if (why === "refused" && a) return staleText(key);
+  return "Couldn't reach the sign-in service, so nothing was changed. Check the connection and try again.";
 }
