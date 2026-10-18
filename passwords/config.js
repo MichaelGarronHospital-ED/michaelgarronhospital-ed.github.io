@@ -48,8 +48,8 @@ export const VOTING_FIREBASE = {
 export const CONFIGS = { admin: ADMIN_FIREBASE, hiring: HIRING_FIREBASE, voting: VOTING_FIREBASE };
 
 // The six accounts, in the order a change goes through them (design B.5.1).
-// The page's own account (admin:leadership) is FIRST. Hiring's Leadership
-// account is last of the Leadership ones: Patient Hub statistics follow it.
+// The page's own account (admin:leadership) is FIRST; Patient Hub statistics
+// check the Admin password against it (since 2026-10-18). Never delete it.
 export const ACCOUNTS = [
   { key: "admin:leadership", project: "admin", role: "leadership", email: "leadership@mgh-ed-admin.invalid", uid: "97uKphgOnYOgsCIQ1oWInDtCpy03" },
   { key: "voting:leadership", project: "voting", role: "leadership", email: "leadership@mgh-ed-voting.invalid", uid: "3eigCLaK0RQ5PmVhxfDgI0qoYzQ2" },
