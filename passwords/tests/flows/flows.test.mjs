@@ -18,7 +18,7 @@ const AXE = fs.readFileSync(new URL("../node_modules/axe-core/axe.min.js", impor
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag2aaa", "wcag21aa", "wcag22aa"];   // as the dashboard's page tests
 const T = { timeout: 240000 };
 const SCHEME = { chromium: "light", webkit: "dark" };
-const WORD = { leadership: "Leadership", ed: "ED", guest: "Guest" };
+const WORD = { leadership: "Admin", ed: "ED", guest: "Guest" };
 const CUR = { leadership: V.lead, ed: V.ed, guest: V.guest };
 const ADMIN = H.emailOf("admin:leadership");
 const DOTS = "•".repeat(10);
@@ -211,10 +211,10 @@ for (const kind of H.browsersToRun()) {
       await waitGate(q, /Incorrect password/);
       await H.signIn(q, V.lead);
       await H.onMain(q);
-      assert.match(await H.rowText(q, "leadership"), /A Leadership change was started; nothing has changed yet\./);
+      assert.match(await H.rowText(q, "leadership"), /An Admin change was started; nothing has changed yet\./);
       assert.ok(!(await q.content()).includes(V.lead2), "the new value is in the page");
       await H.rowButton(q, "leadership", "cancel").click();
-      await H.waitDialog(q, "Cancel the Leadership change?");
+      await H.waitDialog(q, "Cancel the Admin change?");
       await H.dialogClick(q, "Cancel the change");
       await H.waitDialog(q, "Cancelled");
       await H.dialogClick(q, "Close");
@@ -228,7 +228,7 @@ for (const kind of H.browsersToRun()) {
       const r = await signedIn(V.lead);
       assert.equal(await H.rowButton(r, "leadership", "finish").textContent(), "Go on");
       await H.rowButton(r, "leadership", "finish").click();
-      await H.waitDialog(r, "Go on with the Leadership change");
+      await H.waitDialog(r, "Go on with the Admin change");
       await r.fill("#pwNext", V.wrong[0]);
       await H.dialogClick(r, "Go on");
       await r.waitForFunction((t) => document.querySelector("#pwErr").textContent === t, TEXT.notNext);
@@ -406,20 +406,20 @@ for (const kind of H.browsersToRun()) {
       await H.signIn(a, V.lead);
       await a.waitForSelector("#fuEd", { timeout: 30000 });
       await a.fill("#fuEd", V.ed); await a.fill("#fuGuest", V.guest); await a.click("#fuGo");
-      await H.waitDialog(a, "The Leadership password in use");
+      await H.waitDialog(a, "The Admin password in use");
       await a.fill("#pwTyped", V.other); await a.press("#pwTyped", "Enter");
       await H.waitDialog(a, "The ED password in use");
       await a.fill("#pwTyped", V.console); await a.press("#pwTyped", "Enter");
-      await H.waitDialog(a, "New Leadership password");
+      await H.waitDialog(a, "New Admin password");
       await H.dialogClick(a, "Cancel");
       await H.onMain(a);
       assert.ok((await H.rowText(a, "ed")).includes(staleRowText("ed")));
       // device B: types the values in use, then changes ED
       const b = await signedIn();
       await H.rowButton(b, "leadership", "stale").click();
-      await H.waitDialog(b, "The Leadership password in use");
+      await H.waitDialog(b, "The Admin password in use");
       await b.fill("#pwTyped", V.other); await b.press("#pwTyped", "Enter");
-      await H.waitDialog(b, "New Leadership password");
+      await H.waitDialog(b, "New Admin password");
       await H.dialogClick(b, "Cancel");
       await H.rowButton(b, "ed", "stale").click();
       await H.waitDialog(b, "The ED password in use");
@@ -431,7 +431,7 @@ for (const kind of H.browsersToRun()) {
       await finish(b);
       // tab A: the Leadership change finds the copy moved
       await H.rowButton(a, "leadership", "change").click();
-      await H.waitDialog(a, "New Leadership password");
+      await H.waitDialog(a, "New Admin password");
       await H.saveNew(a, V.lead2);
       await H.waitDialog(a, "Changed on another device", 90000);
       await H.dialogClick(a, "Close");
@@ -439,7 +439,7 @@ for (const kind of H.browsersToRun()) {
       assert.ok(!(await H.rowText(a, "ed")).includes(staleRowText("ed")), "the ED row still says the tools disagree");
       assert.ok(!(await H.rowText(a, "ed")).includes("doesn't accept"));
       await H.rowButton(a, "leadership", "change").click();
-      await H.waitDialog(a, "New Leadership password");
+      await H.waitDialog(a, "New Admin password");
       await H.saveNew(a, V.lead2);
       await H.waitDialog(a, "Done", 90000);
       await accepts("leadership", V.lead2);
@@ -455,11 +455,11 @@ for (const kind of H.browsersToRun()) {
       await H.signIn(p, V.lead);
       await p.waitForSelector("#fuEd", { timeout: 30000 });
       await p.fill("#fuEd", V.ed); await p.fill("#fuGuest", V.guest); await p.click("#fuGo");
-      await H.waitDialog(p, "The Leadership password in use");
+      await H.waitDialog(p, "The Admin password in use");
       await p.fill("#pwTyped", V.other); await p.press("#pwTyped", "Enter");
       await H.waitDialog(p, "The ED password in use");
       await p.fill("#pwTyped", V.console); await p.press("#pwTyped", "Enter");
-      await H.waitDialog(p, "New Leadership password");
+      await H.waitDialog(p, "New Admin password");
       await H.saveNew(p, V.lead2);
       await H.waitDialog(p, "Done", 90000);
       await H.dialogClick(p, "Close");
@@ -522,7 +522,7 @@ for (const kind of H.browsersToRun()) {
       await H.setPassword("voting:leadership", V.console);
       const q = await signedIn(V.lead);
       const t = await H.rowText(q, "leadership");
-      assert.ok(t.includes("Motion Voting's Leadership account doesn't accept the saved password or the new one. Someone may have changed it another way. Press Go on first."), t);
+      assert.ok(t.includes("Motion Voting's Admin account doesn't accept the saved password or the new one. Someone may have changed it another way. Press Go on first."), t);
       assert.equal(await H.rowButton(q, "leadership", "fix").count(), 0);
       assert.equal(await H.rowButton(q, "leadership", "finish").textContent(), "Go on");
       await finish(q);
@@ -605,13 +605,13 @@ for (const kind of H.browsersToRun()) {
       await H.signIn(p, V.lead);
       await p.waitForSelector("#fuEd", { timeout: 30000 });
       await p.fill("#fuEd", V.ed); await p.fill("#fuGuest", V.guest); await p.click("#fuGo");
-      await H.waitDialog(p, "The Leadership password in use");
+      await H.waitDialog(p, "The Admin password in use");
       await p.fill("#pwTyped", V.other);
       await p.press("#pwTyped", "Enter");
       await H.waitDialog(p, "The ED password in use");
       await p.fill("#pwTyped", V.console);
       await p.press("#pwTyped", "Enter");
-      await H.waitDialog(p, "New Leadership password");
+      await H.waitDialog(p, "New Admin password");
       assert.ok((await H.dialogText(p)).includes(differText("leadership", {})));
       await H.dialogClick(p, "Cancel");
       await H.onMain(p);

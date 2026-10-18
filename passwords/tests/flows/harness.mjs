@@ -207,7 +207,7 @@ export async function saveNew(page, value, repeat = value) {
 }
 export async function changeRole(page, role, value) {
   await rowButton(page, role, "change").click();
-  await waitDialog(page, `New ${{ leadership: "Leadership", ed: "ED", guest: "Guest" }[role]} password`);
+  await waitDialog(page, `New ${{ leadership: "Admin", ed: "ED", guest: "Guest" }[role]} password`);
   await saveNew(page, value);
 }
 

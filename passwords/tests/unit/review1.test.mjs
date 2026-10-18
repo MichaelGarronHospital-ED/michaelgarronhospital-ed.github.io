@@ -32,7 +32,7 @@ test("S-M1: a forged one-lock change (next under the OLD key) is shown as nothin
   const s = o.session;
   assert.equal(s.content.pending.next, undefined, "the planted value is trusted");
   assert.ok(!JSON.stringify(s.content).includes(X));
-  assert.equal(pendingText(s.content), "A Leadership change was started; nothing has changed yet.");
+  assert.equal(pendingText(s.content), "An Admin change was started; nothing has changed yet.");
   await assert.rejects(() => finishChange({ auth: v.auth, session: s, guard: makeGuard(), now }), (e) => e.code === "needs-next");
   assert.equal(canCancel(s), true);
   for (const k of LEAD_KEYS) assert.equal(v.passwords[k], CUR.leadership);

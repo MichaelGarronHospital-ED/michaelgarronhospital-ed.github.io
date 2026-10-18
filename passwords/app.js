@@ -9,10 +9,10 @@
 //  minutes without use (no change running) or 5 minutes in the background
 //  drops it all and shows the gate again.
 // ============================================================================
-import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=2";
-import * as C from "./core.js?v=2";
-import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=2";
-import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=2";
+import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=3";
+import * as C from "./core.js?v=3";
+import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=3";
+import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=3";
 
 // The test build points every app at the local emulators by replacing the
 // next line (passwords/tests/make-site.mjs). Live it is always null.
@@ -22,7 +22,7 @@ const $ = (id) => document.getElementById(id);
 const DOTS = "•".repeat(10);
 const dotsHtml = `<span aria-hidden="true">${DOTS}</span><span class="pw-sr">hidden</span>`;
 const ROW_INFO = {
-  leadership: "Physician Hiring for Leadership, Motion Voting settings and the Patient Hub statistics page.",
+  leadership: "Physician Hiring for admins, Motion Voting settings and the Patient Hub statistics page.",
   ed: "Physician Hiring for the committee, and Motion Voting.",
   guest: "Physician Hiring, for applicants to book their times.",
 };
@@ -82,7 +82,7 @@ async function onGate(e) {
   const btn = $("gbtn"), field = $("gpw");
   const typed = field.value.trim();     // the gate trims the ends, like hiring
   if (btn.disabled || C.gatePausedFor(ls)) return;
-  if (!typed) { gateMsg("Type the Leadership password."); return; }
+  if (!typed) { gateMsg("Type the Admin password."); return; }
   btn.disabled = true; btn.textContent = "Signing in...";
   gateMsg("");
   let done = false;
@@ -548,14 +548,14 @@ function stepGoOn(ctl) {
   if (C.canCancel(S.session)) buttons.push({ label: "Cancel this change", kind: "danger", run: (c) => stepCancel(c) });
   buttons.push({ label: "Go on", kind: "filled", run: async (c, btn) => {
     const typed = val("pwNext");
-    if (!typed) { showErr(["Type the new Leadership password."], "pwNext"); return; }
+    if (!typed) { showErr(["Type the new Admin password."], "pwNext"); return; }
     SEEN.add(typed);
     btn.disabled = true; showBusy(C.TEXT.opening);
     try { await S.session.unlockNext(typed); }
     catch (e) { btn.disabled = false; showErr([e && e.code === "not-next" ? C.TEXT.notNext : C.TEXT.noConnection], "pwNext"); return; }
     runFlow(c, "leadership", (x) => C.finishChange(x));
   } });
-  ctl.step({ title: "Go on with the Leadership change", html: `${msgLine}<p>${h(C.TEXT.goOn)}</p>${field("pwNext", "New Leadership password")}`,
+  ctl.step({ title: "Go on with the Admin change", html: `${msgLine}<p>${h(C.TEXT.goOn)}</p>${field("pwNext", "New Admin password")}`,
     wire: wireShow, buttons });
 }
 function openCancel() { flowDialog((ctl) => stepCancel(ctl), { onClose: () => render() }); }

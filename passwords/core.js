@@ -36,11 +36,11 @@
 //  `store` is store.js (read, write); the tests pass a fake.
 // ============================================================================
 
-import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=2";
-import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=2";
+import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=3";
+import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=3";
 
 export const ROLES = Object.freeze(["leadership", "ed", "guest"]);
-export const ROLE_WORD = Object.freeze({ leadership: "Leadership", ed: "ED", guest: "Guest" });
+export const ROLE_WORD = Object.freeze({ leadership: "Admin", ed: "ED", guest: "Guest" });
 export const TOOL_OF = Object.freeze({ admin: "the ED tools passwords page", voting: "Motion Voting", hiring: "Physician Hiring" });
 const TOOL_TITLE = Object.freeze({ admin: "The ED tools passwords page", voting: "Motion Voting", hiring: "Physician Hiring" });
 export const PROJECT_ID = Object.freeze(Object.fromEntries(Object.entries(CONFIGS).map(([k, c]) => [k, c.projectId])));
@@ -75,7 +75,7 @@ export function validateCurrent(roles, current) {
   if (!errors.length) {
     const vals = roles.map((r) => String(current[r]));
     if (new Set(vals).size !== vals.length || roles.some((r) => r !== "leadership" && current[r] === current.leadership))
-      errors.push("The Leadership, ED and Guest passwords must all be different. Check each was typed right.");
+      errors.push("The Admin, ED and Guest passwords must all be different. Check each was typed right.");
   }
   return errors;
 }
@@ -100,9 +100,9 @@ export function validateNew(roles, current, next, overrides = {}) {
     // never a value any account accepts today: if the change stopped part way,
     // that account would let its holders in as the wrong role (review M1)
     else if (v && ROLES.some((o) => o !== r && v === String(current[o] || "")))
-      errors.push(`The new ${w} password is already in use. The Leadership, ED and Guest passwords must all be different, and none can be one in use now.`);
+      errors.push(`The new ${w} password is already in use. The Admin, ED and Guest passwords must all be different, and none can be one in use now.`);
     if (v && Object.values(overrides).some((x) => x && v === x))
-      errors.push(`The new ${w} password is already in use. The Leadership, ED and Guest passwords must all be different, and none can be one in use now.`);
+      errors.push(`The new ${w} password is already in use. The Admin, ED and Guest passwords must all be different, and none can be one in use now.`);
   }
   // the three in use afterwards must all differ (the sign-in pages tell the
   // roles apart only by which account accepts the password)
@@ -110,7 +110,7 @@ export function validateNew(roles, current, next, overrides = {}) {
   // (one line, not two: when a new value is already in use, that line says it all)
   if ((after.leadership && (after.leadership === after.ed || after.leadership === after.guest) || (after.ed && after.ed === after.guest))
       && !errors.some((e) => e.includes("is already in use")))
-    errors.push("The Leadership, ED and Guest passwords must all be different.");
+    errors.push("The Admin, ED and Guest passwords must all be different.");
   return [...new Set(errors)];
 }
 
@@ -345,7 +345,7 @@ export class Session {
     // a tab that opened only the OLD lock of a Leadership change must never
     // write without the NEW one (it would lose the new value); only Cancel
     if (this.missingLock && locks.length < this.doc.locks.length && !(p && p.next) && !opts.cancel)
-      throw fail("needs-next", "Type the new Leadership password first.");
+      throw fail("needs-next", "Type the new Admin password first.");
     let made = null;
     const doc = await this.store.write(this.gen, async () => {
       made = mutate(clone(this.content));
@@ -374,7 +374,7 @@ export class Session {
     let lock;
     try { lock = await makeLock(String(typed || ""), { salt: other.salt, iter: other.iter }); } catch { lock = null; }
     const r = lock && (await openWithLocks({ ...this.doc, locks: [other] }, [lock]));
-    if (!r || !r.content.pending || r.content.pending.next !== typed) throw fail("not-next", "That is not the new Leadership password typed when the change started.");
+    if (!r || !r.content.pending || r.content.pending.next !== typed) throw fail("not-next", "That is not the new Admin password typed when the change started.");
     await this.adopt(this.doc, [...this.locks, madeFrom(lock, typed)]);
     return this;
   }
@@ -516,7 +516,7 @@ export async function startChange({ session, now = today }, role, value, from = 
 export async function runChange({ auth, session, guard, now = today, onProgress = () => {} }) {
   const p0 = session.content.pending;
   if (!p0) return { ok: true, stage: "none" };
-  if (!p0.next) throw fail("needs-next", "Type the new Leadership password first.");
+  if (!p0.next) throw fail("needs-next", "Type the new Admin password first.");
   const role = p0.role, next = { [role]: { value: p0.next } };
   const ad = guarded(auth, guard);
   const record = async (prog) => {
@@ -574,7 +574,7 @@ export async function changePassword(ctx, role, value, { from = {}, known = {} }
 export async function finishChange(ctx) {
   const p = ctx.session.content.pending;
   if (!p) return { ok: true, stage: "none" };
-  if (!p.next) throw fail("needs-next", "Type the new Leadership password first.");
+  if (!p.next) throw fail("needs-next", "Type the new Admin password first.");
   return runChange(ctx);
 }
 
@@ -814,7 +814,7 @@ export function signInError(e) {
     return "Couldn't load the sign-in service. A hospital network, VPN or content blocker may be blocking www.gstatic.com. Try mobile data.";
   if (c.includes("too-many-requests")) return TEXT.throttled;   // one wording everywhere
   if (c.includes("network")) return "Network problem. Check your connection and try again.";
-  if (c.includes("user-disabled")) return "The Leadership account is switched off. The department account can switch it back on in the Firebase console.";
+  if (c.includes("user-disabled")) return "The Admin account is switched off. The department account can switch it back on in the Firebase console.";
   if (isRefusal(e)) return "Incorrect password.";
   return "Couldn't sign in. Please try again.";
 }
@@ -832,7 +832,7 @@ export function gateWrong(ls, now = Date.now()) {
   return !!g.until && g.until > now;
 }
 export const gateRight = (ls) => ls.del(GATE_KEY);
-export const gateWrongText = (paused) => "Incorrect password. This page needs the Leadership password." + (paused ? " To protect the accounts, wait 30 seconds before trying again." : "");
+export const gateWrongText = (paused) => "Incorrect password. This page needs the Admin password." + (paused ? " To protect the accounts, wait 30 seconds before trying again." : "");
 
 // ---- words for the page (all plain, no value in any of them) ---------------------------
 const shortDay = (iso) => { const d = iso ? new Date(iso) : null; return d && !isNaN(d) ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""; };
@@ -840,12 +840,12 @@ export const longDay = (iso) => { const d = iso ? new Date(iso) : null; return d
 const toolTitle = (a) => TOOL_TITLE[a.project];
 
 export const TEXT = Object.freeze({
-  intro: "The Leadership, ED and Guest passwords open Physician Hiring, Motion Voting and the Patient Hub statistics page. Changing one here changes it everywhere.",
+  intro: "The Admin, ED and Guest passwords open Physician Hiring, Motion Voting and the Patient Hub statistics page. Changing one here changes it everywhere.",
   gateTitle: "ED tools passwords",
-  gateLead: "Enter the Leadership password to see and change the ED tools passwords.",
+  gateLead: "Enter the Admin password to see and change the ED tools passwords.",
   opening: "Opening...",
-  firstUse: "First time here. Type the ED and Guest passwords in use now. This page checks them with every tool, then keeps an encrypted copy so Leadership can see them here.",
-  recovery: "The saved copy was made with an older Leadership password. Type the ED and Guest passwords in use now to make a new copy.",
+  firstUse: "First time here. Type the ED and Guest passwords in use now. This page checks them with every tool, then keeps an encrypted copy so anyone with the Admin password can see them here.",
+  recovery: "The saved copy was made with an older Admin password. Type the ED and Guest passwords in use now to make a new copy.",
   refusedDoc: "The saved copy can't be opened. Type the ED and Guest passwords in use now to make a new copy.",
   changedElsewhere: "This was just changed on another device. Here is the latest.",
   signedOut: "You were signed out, probably because a password changed.",
@@ -853,7 +853,7 @@ export const TEXT = Object.freeze({
   keepOpen: "Keep this page open until it says Done.",
   tellPeople: "Tell people in person or by phone. Never email a password.",
   typedWrong: "That didn't work either. Check it was typed right.",
-  notNext: "That is not the new Leadership password typed when the change started.",
+  notNext: "That is not the new Admin password typed when the change started.",
   throttled: "Firebase has paused sign-ins from this device for about 15 minutes. Wait, then try once.",
   frame: "Open this page on its own.",
   typedEarlier: "You typed this earlier on this page. Choose a different new password.",
@@ -861,13 +861,13 @@ export const TEXT = Object.freeze({
   idleOut: "You were signed out because the page was not used for 10 minutes. Sign in again to go on.",
   hiddenOut: "You were signed out because the page was in the background for 5 minutes. Sign in again to go on.",
   loggedOut: "You are signed out.",
-  sameInUse: "Two of the passwords you typed are the same. The Leadership, ED and Guest passwords must all be different. Check each was typed right. If two tools really use the same one, ask the person who looks after the ED tools.",
+  sameInUse: "Two of the passwords you typed are the same. The Admin, ED and Guest passwords must all be different. Check each was typed right. If two tools really use the same one, ask the person who looks after the ED tools.",
   brokenCopy: "The saved copy can't be opened or replaced from this page. Ask the person who looks after the ED tools.",
   noConnection: "Couldn't reach the sign-in service. Check the connection and try again.",
   noSave: "Couldn't save. Check the connection and try again.",
   savedStale: "Saved. This page now has the password every tool uses.",
   sameAsSaved: "That is the password saved here, so nothing needs to change.",
-  goOn: "A Leadership change was started on another device and nothing has changed yet. To go on, type the new Leadership password again. Or cancel the change.",
+  goOn: "An Admin change was started on another device and nothing has changed yet. To go on, type the new Admin password again. Or cancel the change.",
   cancelAsk: "Nothing has changed in any tool yet. Cancel this change?",
 });
 
@@ -894,7 +894,7 @@ export function pendingText(content) {
   const p = content && content.pending;
   if (!p) return "";
   const w = ROLE_WORD[p.role], d = shortDay(p.startedAt);
-  if (p.role === "leadership" && !p.next) return "A Leadership change was started; nothing has changed yet.";
+  if (p.role === "leadership" && !p.next) return "An Admin change was started; nothing has changed yet.";
   return `A change of the ${w} password didn't finish${d ? ` (started ${d})` : ""}.`;
 }
 // a named account and the fix, once something changed (B.5.4)

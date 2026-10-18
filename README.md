@@ -14,8 +14,8 @@ project (see "Passwords page" below).
 
 | Tool | Who uses it | Sign-in | Live site | Repo | Data / backend |
 |---|---|---|---|---|---|
-| Motion Voting | ED physicians at meetings; admins run it from the admin page (linked on the same tile) | ED password, then voters pick their name; Leadership password for the admin page | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
-| Physician Hiring | ED physicians; applicants book times | ED password (Leadership password for admin views); applicants use the Guest password at `book.html` | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/) | [mgh-ed-hiring](https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring) | Firebase (see that repo's README) |
+| Motion Voting | ED physicians at meetings; admins run it from the admin page (linked on the same tile) | ED password, then voters pick their name; Admin password for the admin page | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/) | [mgh-ed-motion-voting](https://github.com/MichaelGarronHospital-ED/mgh-ed-motion-voting) | Firebase project `ed-motion-voting-99b96` |
+| Physician Hiring | ED physicians; applicants book times | ED password (Admin password for admin views); applicants use the Guest password at `book.html` | [site](https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/) | [mgh-ed-hiring](https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring) | Firebase (see that repo's README) |
 | ED Hub | ED physicians | Hospital Microsoft sign-in | [site](https://tehn.sharepoint.com/sites/EDResourcesandReferralSupports) | none (SharePoint / Teams) | SharePoint site "ED Resources and Referral Supports" (hospital Microsoft 365) |
 | CPOE Order Review | ~70 physician, pharmacy, lab, DI and nursing reviewers before the Feb 2027 Cerner go-live | Access code | [site](https://mghcpoe.pythonanywhere.com) | private (still on the maintainer's account) | PythonAnywhere account "mghcpoe" |
 | Patient Hub | Patients and families (public); editors use the content editor and Map Studio (linked on the same tile) | None for patients; editors sign in with GitHub | [site](https://mgh-ed-patient-hub.pages.dev) | [mgh-ed-patient-hub](https://github.com/MichaelGarronHospital-ED/mgh-ed-patient-hub) (private) | Cloudflare Pages |
@@ -153,9 +153,9 @@ the tool and how they sign in. The check reminds you if a tool is missing from i
 
 - Link each tile to the tool's **public entry page**. A staff page may appear under
   `related` only if a sign-in or password protects it (Patient Hub's editors need GitHub
-  write access; the voting admin page and Patient Hub statistics need the Leadership
+  write access; the voting admin page and Patient Hub statistics need the Admin
   password, and Firebase
-  refuses changes from anyone not signed in as leadership). Never rely on an unusual
+  refuses changes from anyone not signed in as Admin). Never rely on an unusual
   address alone: this repo and the tool repos are public.
 - Keep the dashboard free of secrets, sign-in logic and tool data. The only exception is
   the passwords page (`passwords.html`, `passwords/`), which signs in to Firebase; it still
@@ -183,14 +183,14 @@ python3 -m unittest discover -s tests -p 'test_check_tools.py'
 
 ## Passwords page
 
-**Address:** https://michaelgarronhospital-ed.github.io/passwords.html (Leadership only).
+**Address:** https://michaelgarronhospital-ed.github.io/passwords.html (Admin only).
 **Opened by the gear** at the top right of the dashboard (since 2026-10-18, after Alvin's phone
 check). `passwords/tests/unit/page.test.mjs` and `tests/test_page.py` check the gear's address.
 
 ### What it does
 
-Anyone with the Leadership password signs in and sees the three shared passwords
-(Leadership, ED, Guest), each hidden as 10 dots, with Show, Copy and Change. Change asks
+Anyone with the Admin password signs in and sees the three shared passwords
+(Admin, ED, Guest), each hidden as 10 dots, with Show, Copy and Change. Change asks
 only for the new password twice: the page signs in to each account with the saved current
 value seconds before changing it, in a fixed order, so Physician Hiring, Motion Voting and
 the Patient Hub statistics page always end up with the same three passwords.
@@ -200,25 +200,28 @@ the Patient Hub statistics page always end up with the same three passwords.
 - **If a change stops part way** (a closed tab, a lost connection): open the page on any
   device and press **Finish the change**. It first shows what it sets the password to
   (hidden until Show), so a change nobody here started can be spotted. Nothing needs
-  typing, except in one case: a Leadership change stopped before anything changed asks
-  for the new Leadership password again (**Go on**), or offers **Cancel this change**.
-- **Stuck with only Go on, and nobody knows the new Leadership password:** the way out is
+  typing, except in one case: a Admin change stopped before anything changed asks
+  for the new Admin password again (**Go on**), or offers **Cancel this change**.
+- **Stuck with only Go on, and nobody knows the new Admin password:** the way out is
   the maintainer's `set-passwords.py --apply` (in the workspace), which sets all three
   passwords and makes a new saved copy.
 - **If a tool's password was changed another way** (the Firebase console, the maintainer's
   script), the page says which tool no longer takes the saved one and asks for the one in
   use. If the tools then disagree, it asks for one new password for all of them.
-- **First time, or after the Leadership password was changed outside this page:** the page
+- **First time, or after the Admin password was changed outside this page:** the page
   asks for the ED and Guest passwords in use now, checks them with every tool, and saves a
   new encrypted copy.
 
 ### How it works
 
 - One sign-in page in this repo: `passwords.html` with `passwords/`. Plain files, no build.
+- The **Admin** password was called "Leadership" until 2026-10-18. Only the words people
+  see changed: the account emails (`leadership@...`), the key `admin:leadership` and the
+  saved copy still say `leadership`, so nobody was signed out and the saved copy still opens.
 - It signs in to one account, `leadership@mgh-ed-admin.invalid`, in its own free Firebase
   project **`mgh-ed-admin`** ("MGH ED Admin", Spark plan, Firestore in Montreal). That
   project holds one document, `vault/main`: the three passwords, **encrypted in the
-  browser** with a key made from the Leadership password (600,000 rounds). Firebase only
+  browser** with a key made from the Admin password (600,000 rounds). Firebase only
   ever sees the scrambled copy. The rules (`passwords/firestore.rules`) let only that one
   account, known by its uid, read or write it.
 - To change a tool's password it signs in to that tool's account in a separate,
@@ -233,10 +236,10 @@ the Patient Hub statistics page always end up with the same three passwords.
 
 ### Honest limits
 
-- Anyone with the Leadership password can see the ED and Guest passwords. That is the
-  point: only Leadership-password holders get in.
+- Anyone with the Admin password can see the ED and Guest passwords. That is the
+  point: only Admin-password holders get in.
 - Whoever can read the scrambled copy (Owners of `mgh-ed-admin`, Google) could try to
-  guess the Leadership password offline. 600,000 rounds per guess makes a three or four
+  guess the Admin password offline. 600,000 rounds per guess makes a three or four
   word password slow to guess, not impossible. Those Owners can already reset any account.
 - An Owner restoring an old copy of the document makes the page show old values; the
   check when the page opens reports them.
@@ -247,11 +250,11 @@ the Patient Hub statistics page always end up with the same three passwords.
   content policy, which help.
 - Anyone who can change this repo can change the page. Review every change to
   `passwords.html` and `passwords/` with care.
-- During a Leadership change, someone who knows only the old Leadership password can still
+- During a Admin change, someone who knows only the old Admin password can still
   read the saved copy for a while: from the start of the change until the page's own
   account has the new password, and for up to about an hour after (a sign-in stays valid
-  that long). They could then try to guess the new Leadership password offline. Choose a
-  strong new Leadership password: three or four words.
+  that long). They could then try to guess the new Admin password offline. Choose a
+  strong new Admin password: three or four words.
 
 ### Files
 

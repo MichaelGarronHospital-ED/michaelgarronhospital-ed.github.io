@@ -68,6 +68,11 @@ README "Passwords page" explains it for people. The dashboard gear (`index.html`
 - Never a real password anywhere: not in the repo, a test, a commit or a log. Tests use
   invented values only. Nothing on the page may write a value to storage, the URL, the
   console or any Firestore field in clear (the flows check).
+- People see the top password as **Admin** (Alvin, 2026-10-18; it was "Leadership"). Only
+  visible words changed: the role key `leadership`, `roles.leadership` in the vault and
+  pending changes, `admin:leadership`, the `leadership@` / `admin@` emails, uids, rules,
+  storage keys and `vault-cli.mjs` keep the old word. Never rename them (it would sign
+  people out or stop the saved copy opening). "ED leadership" meaning people stays.
 - `passwords/core.js` holds every rule and every message; keep it close to hiring's
   `js/passwords.js` (same names, same adapter) so a reviewer can diff them.
 - Content policy is in `passwords.html` (B.6.1, a test pins it): no inline script, no

@@ -46,7 +46,7 @@ test("N-M1: without those values Check stops at the other role's hiring account 
 
 test("m1: the Finish-line text offers typing only when the page can (before Go on it says to press Go on)", () => {
   assert.equal(neitherText("hiring:committee", true), failureText({ code: "refused" }, "hiring:committee"));
-  assert.equal(neitherText("voting:leadership", false), "Motion Voting's Leadership account doesn't accept the saved password or the new one. Someone may have changed it another way. Press Go on first.");
+  assert.equal(neitherText("voting:leadership", false), "Motion Voting's Admin account doesn't accept the saved password or the new one. Someone may have changed it another way. Press Go on first.");
 });
 
 test("m4: a value typed earlier on this page has its own words", () => {
