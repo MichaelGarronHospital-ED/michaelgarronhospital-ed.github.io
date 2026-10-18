@@ -73,8 +73,10 @@ README "Passwords page" explains it for people. The dashboard gear (`index.html`
   pending changes, `admin:leadership`, the `leadership@` / `admin@` emails, uids, rules,
   storage keys and `vault-cli.mjs` keep the old word. Never rename them (it would sign
   people out or stop the saved copy opening). "ED leadership" meaning people stays.
-- `passwords/core.js` holds every rule and every message; keep it close to hiring's
-  `js/passwords.js` (same names, same adapter) so a reviewer can diff them.
+- `passwords/core.js` holds every rule and every message. It started as a copy of hiring's
+  `js/passwords.js`, which was deleted in R10, so there is nothing left to keep it in step
+  with; its words were last tidied in the UX pass (2026-10-18: shorter intro and hint, no
+  sign-in lead line). Show and Copy on each row are icon buttons with hover text (app.js).
 - Content policy is in `passwords.html` (B.6.1, a test pins it): no inline script, no
   inline style, no `style=` or `on...=` attribute, even inside JS strings. Every `?v=` in
   `passwords/` and `passwords.html` is equal; bump them together.

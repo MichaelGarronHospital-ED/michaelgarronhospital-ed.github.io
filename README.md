@@ -190,7 +190,8 @@ check). `passwords/tests/unit/page.test.mjs` and `tests/test_page.py` check the 
 ### What it does
 
 Anyone with the Admin password signs in and sees the three shared passwords
-(Admin, ED, Guest), each hidden as 10 dots, with Show, Copy and Change. Change asks
+(Admin, ED, Guest), each hidden as 10 dots, with Show and Copy (eye and copy icons; hover
+for the words) and Change. Change asks
 only for the new password twice: the page signs in to each account with the saved current
 value seconds before changing it, in a fixed order, so Physician Hiring, Motion Voting and
 the Patient Hub statistics page always end up with the same three passwords.
