@@ -62,8 +62,8 @@ status check (it would block the bot's own save and the "saved to main by mistak
 ## Passwords page (`passwords.html`, `passwords/`)
 
 The one sign-in page in this repo (design: workspace `designs/passwords-design.md`, Phase B).
-README "Passwords page" explains it for people. Not linked from `index.html` until PR B
-(the gear); do not link it before Alvin's phone check.
+README "Passwords page" explains it for people. The dashboard gear (`index.html`,
+`.settings-link`) opens it (since 2026-10-18); never point the gear anywhere else.
 
 - Never a real password anywhere: not in the repo, a test, a commit or a log. Tests use
   invented values only. Nothing on the page may write a value to storage, the URL, the

@@ -33,8 +33,10 @@ test("boot.js runs first as a classic script, then the module; the shared look b
   assert.deepEqual(css, ["shared/ed-ui.css?v=2", "passwords/styles.css?v=2"]);
 });
 
-test("the page is not linked from the dashboard yet (PR B adds the gear link)", () => {
-  assert.ok(!readFileSync(new URL("index.html", root), "utf8").includes('href="passwords.html"'));
+test("the dashboard gear opens this page (PR B, after Alvin's phone check 2026-10-18)", () => {
+  const index = readFileSync(new URL("index.html", root), "utf8");
+  assert.ok(index.includes('class="settings-link" href="passwords.html"'));
+  assert.ok(!index.includes("mgh-ed-hiring/passwords.html"), "no link to hiring's old page");
 });
 
 test("styles.css uses only the shared --ed-* tokens for colour", () => {
