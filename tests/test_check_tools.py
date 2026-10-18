@@ -321,9 +321,10 @@ class TestFileRules(Base):
             body = urllib.parse.unquote(params["body"])
             self.assertTrue(body.endswith("\r\n\r\n" + SCOPE), (name, body))
             self.assertTrue(urllib.parse.unquote(params["subject"]).startswith("[ED tools] "))
-        # the footer and app.js use the same sentence, word for word
-        self.assertIn(" ".join(SCOPE.split()), " ".join((REPO / "index.html").read_text().split()))
+        # app.js puts the same sentence in its email, word for word. The footer no longer
+        # shows it (Alvin, 2026-10-18): it lives in the prefilled emails only.
         self.assertIn(SCOPE, (REPO / "app.js").read_text())
+        self.assertNotIn("For tool problems only", re.sub(r'href="[^"]*"', "", (REPO / "index.html").read_text()))
 
 
 class TestFallback(Base):

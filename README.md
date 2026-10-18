@@ -392,7 +392,7 @@ That mailbox is the login for a department account on each service:
   (a role, not a person) and has "Report a problem": a prefilled email to the mailbox
   with "[ED tools]" at the start of the subject, so reports are easy to sort (an Outlook
   rule can file them into their own folder) and never bury sign-in or security emails.
-  "For tool problems only. Not for medical questions." To switch it to a form later,
+  The prefilled email ends "For tool problems only. Not for medical questions." (the page itself no longer shows that line). To switch it to a form later,
   change the one `href` of `id="report-link"` in `index.html` (the check expects an
   email link there today, so its contact rule in `scripts/check_tools.py` changes too).
 - Checked 2026-10-14: every repo in this org can be updated and deployed using only

@@ -12,7 +12,7 @@
   {
     "name": "Motion Voting",
     "group": "For the ED team",
-    "description": "Live weighted voting at department meetings.",
+    "description": "Live voting at department meetings.",
     "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/",
     "icon": "icons/motion-voting.svg",
     "color": "blue",
@@ -20,10 +20,9 @@
     "owner": "ED Administration",
     "check": true,
     "related": {
-      "label": "For admins",
       "links": [
         {
-          "name": "Settings",
+          "name": "Admin console",
           "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-motion-voting/admin-9f4k2x7q.html"
         }
       ]
@@ -61,8 +60,11 @@
     "owner": "ED Administration",
     "check": true,
     "related": {
-      "label": "For admins",
       "links": [
+        {
+          "name": "Editing guide",
+          "url": "https://mgh-ed-patient-hub.pages.dev/admin/guide.html"
+        },
         {
           "name": "Content editor",
           "url": "https://mgh-ed-patient-hub.pages.dev/admin/"
@@ -70,10 +72,6 @@
         {
           "name": "Map Studio",
           "url": "https://mgh-ed-patient-hub.pages.dev/admin/map-studio.html"
-        },
-        {
-          "name": "Editing guide",
-          "url": "https://mgh-ed-patient-hub.pages.dev/admin/guide.html"
         },
         {
           "name": "Visit statistics",

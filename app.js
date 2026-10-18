@@ -114,11 +114,14 @@ function usableLinks(related) {
   });
 }
 
-function relatedBlock(related, links) {
+// The label is optional: without one the links show on their own line, and the list is
+// named after the tool for screen readers.
+function relatedBlock(related, links, toolName) {
   const box = el("div", "related");
-  const head = el("p", "related-head", related.label || "Related");
+  const label = typeof related.label === "string" ? related.label.trim() : "";
   const list = el("ul", "related-links");
-  list.setAttribute("aria-label", related.label || "Related");
+  list.setAttribute("aria-label", label || toolName + " links");
+  if (label) box.append(el("p", "related-head", label));
   for (const link of links) {
     const li = el("li");
     const a = el("a", null, link.name);
@@ -126,7 +129,7 @@ function relatedBlock(related, links) {
     li.append(a);
     list.append(li);
   }
-  box.append(head, list);
+  box.append(list);
   return box;
 }
 
@@ -163,7 +166,7 @@ function card(tool) {
   row.append(icn, text, chev);
   card.append(row);
   const links = usableLinks(tool.related);
-  if (links.length) card.append(relatedBlock(tool.related, links));
+  if (links.length) card.append(relatedBlock(tool.related, links, tool.name));
   li.append(card);
   return li;
 }
