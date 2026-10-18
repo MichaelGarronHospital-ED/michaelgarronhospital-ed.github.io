@@ -260,14 +260,16 @@ def check_tools(tools, root, colors, hosts, report, now=None):
 
 def check_related(where, related, report):
     if not isinstance(related, dict):
-        report.error('%s: "related" must be a block with "label" and "links".' % where)
+        report.error('%s: "related" must be a block with "links" (and an optional "label").' % where)
         return
     for key in related:
         if key not in ("label", "links"):
             report.error('%s: "related" has an unknown field "%s". It only takes "label" and "links".' % (where, key))
     lab = related.get("label")
-    if not isinstance(lab, str) or not lab.strip():
-        report.error('%s: "related" needs a "label", for example "For admins".' % where)
+    if lab is None:
+        pass                                  # optional: no label, the links show on their own
+    elif not isinstance(lab, str) or not lab.strip():
+        report.error('%s: the "related" label is empty. Delete the "label" line or write one.' % where)
     elif len(lab.strip()) > 30:
         report.error('%s: the "related" label is %d characters long. Keep it to 30 or fewer.' % (where, len(lab.strip())))
     links = related.get("links")

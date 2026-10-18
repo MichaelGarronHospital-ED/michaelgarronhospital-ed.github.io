@@ -836,6 +836,21 @@ class PageTests:
         self.assertEqual(len(h.warnings), 2, h.warnings)
         h.assert_clean()
 
+    # The label is optional (2026-10-18): without one the links show on their own, no heading.
+    def test_12b_related_without_label(self):
+        tools = tools_json()
+        hub = tool(tools, "Patient Hub")
+        del hub["related"]["label"]
+        h = self.h(tools=tools)
+        page = h.open()
+        card = page.locator(".card", has=page.locator(".main", has_text="Patient Hub"))
+        self.assertEqual(card.locator(".related-head").count(), 0)
+        self.assertEqual(card.locator(".related-links a").count(), len(hub["related"]["links"]))
+        self.assertEqual(card.locator(".related-links").get_attribute("aria-label"), "Patient Hub links")
+        voting = page.locator(".card", has=page.locator(".main", has_text="Motion Voting"))
+        self.assertEqual(voting.locator(".related-head").count(), 1)   # a label still shows when given
+        h.assert_clean()
+
     # review m6: what counts as a problem
     def test_07a_answers_that_mean_a_problem(self):
         for status in (410, 500, 502, 503):
