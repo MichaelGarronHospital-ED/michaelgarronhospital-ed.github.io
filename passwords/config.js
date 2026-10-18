@@ -1,8 +1,10 @@
 export const ADMIN_FIREBASE = {
-  apiKey: "NOT-CREATED-YET",
+  apiKey: "AIzaSyA_6VOh0iJTjtvS7RO2RuCPChkuB5XcCNs",
   authDomain: "mgh-ed-admin.firebaseapp.com",
   projectId: "mgh-ed-admin",
-  appId: "NOT-CREATED-YET",
+  storageBucket: "mgh-ed-admin.firebasestorage.app",
+  messagingSenderId: "41108637845",
+  appId: "1:41108637845:web:9d4a6a14e2432f6bf5739c",
 };
 // ============================================================================
 //  The ED tools passwords page: public settings only (design B.6.1).
