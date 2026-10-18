@@ -13,7 +13,7 @@ const INVENTED_UID = "InventedAdminUid0000000001";
 const deployedCfg = cfg
   .replace(/(ADMIN_FIREBASE = \{[^}]*)apiKey: "[^"]*"/, '$1apiKey: "AIzaInventedKeyForTheTestsOnly000000000"')
   .replace(/(ADMIN_FIREBASE = \{[^}]*)appId: "[^"]*"/, '$1appId: "1:000000000000:web:inventedtest"')
-  .replace(/(\{ key: "admin:leadership",[^\n]*uid: )""/, `$1"${INVENTED_UID}"`);
+  .replace(/(\{ key: "admin:leadership",[^\n]*uid: )"[^"]*"/, `$1"${INVENTED_UID}"`);   // empty or filled in (round 2)
 const deployedRules = rules.replace(/request\.auth\.uid == '[^']*'/, `request.auth.uid == '${INVENTED_UID}'`);
 const load = async (text) => import("data:text/javascript;base64," + Buffer.from(text).toString("base64"));
 

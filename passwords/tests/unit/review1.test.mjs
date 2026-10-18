@@ -116,7 +116,7 @@ test("m1: Check first also proves the Physician Hiring account of each other rol
 test("m1: a value typed in this tab for any row counts as in use", () => {
   const content = { roles: CUR, pending: null };
   assert.deepEqual(validateChange(content, "ed", NEXT.ed, NEXT.ed, {}, []), []);
-  assert.ok(validateChange(content, "ed", NEXT.ed, NEXT.ed, {}, new Set([NEXT.ed]))[0].includes("already in use"));
+  assert.deepEqual(validateChange(content, "ed", NEXT.ed, NEXT.ed, {}, new Set([NEXT.ed])), [TEXT.typedEarlier]);
 });
 
 // ---- minor 10: no stale flow on any row while a change is pending

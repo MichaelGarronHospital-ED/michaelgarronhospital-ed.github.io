@@ -120,8 +120,10 @@ export function validateChange(content, role, value, repeat, from = {}, seen = [
   const p = (content && content.pending) || null;
   const extra = { ...((p && p.from) || {}), ...from };
   if (p && p.next) extra["pending:next"] = p.next;
-  [...seen].forEach((v, i) => { extra[`seen:${i}`] = v; });
-  return validateNew([role], content.roles, { [role]: { value, repeat } }, extra);
+  const errors = validateNew([role], content.roles, { [role]: { value, repeat } }, extra);
+  if (value && new Set(seen).has(value) && !errors.some((e) => e.includes("already in use") || e.includes("same as the current")))
+    errors.push(TEXT.typedEarlier);
+  return errors;
 }
 
 // Which current value to try for an account: its own value if the tools
@@ -472,9 +474,16 @@ const cleanFrom = (content, role, from) => Object.fromEntries(Object.entries(fro
   .filter(([k, v]) => { const a = byKey(k); return a && a.role === role && v && v !== content.roles[role]; }));
 
 // 1. Check first: each account of the role with its current value. Nothing changes.
-export async function checkFirst({ auth, session, guard }, role, from = {}) {
+// known: { <account key>: value } every account value this tab already knows
+// differs from the saved one, for ANY role (the rows' "not the same in every
+// tool", pending.from). The other roles' hiring accounts are proven with those,
+// so two roles whose hiring accounts both differ don't stop each other's
+// Check (round 2 N-M1).
+export async function checkFirst({ auth, session, guard }, role, from = {}, known = {}) {
   const c = session.content;
-  return preflight(guarded(auth, guard, { skipKnown: true }), [role], c.roles, cleanFrom(c, role, from));
+  const others = Object.fromEntries(Object.entries({ ...((c.pending && c.pending.from) || {}), ...known })
+    .filter(([k, v]) => { const a = byKey(k); return a && a.role !== role && v && v !== c.roles[a.role]; }));
+  return preflight(guarded(auth, guard, { skipKnown: true }), [role], c.roles, { ...others, ...cleanFrom(c, role, from) });
 }
 
 // 2. Start (one write): pending, and for Leadership the NEW lock (the OLD lock
@@ -545,8 +554,8 @@ export async function runChange({ auth, session, guard, now = today, onProgress 
 
 // Change now: Check first, Start, then run. -> { ok, stage, ... }; a refusal
 // at Check is { ok: false, stage: "check", results } (the stale flow).
-export async function changePassword(ctx, role, value, { from = {} } = {}) {
-  const pre = await checkFirst(ctx, role, from);
+export async function changePassword(ctx, role, value, { from = {}, known = {} } = {}) {
+  const pre = await checkFirst(ctx, role, from, known);
   if (!pre.ok) {
     // a refusal may only mean another device changed a password meanwhile:
     // one read of the vault tells (then it is "changed elsewhere", not stale)
@@ -833,6 +842,7 @@ export const TEXT = Object.freeze({
   notNext: "That is not the new Leadership password typed when the change started.",
   throttled: "Firebase has paused sign-ins from this device for about 15 minutes. Wait, then try once.",
   frame: "Open this page on its own.",
+  typedEarlier: "You typed this earlier on this page. Choose a different new password.",
   notReady: "This page is not ready yet. Ask the person who looks after the ED tools to finish setting it up.",
   idleOut: "You were signed out because the page was not used for 10 minutes. Sign in again to go on.",
   hiddenOut: "You were signed out because the page was in the background for 5 minutes. Sign in again to go on.",
@@ -887,6 +897,12 @@ export function failureText(error, key) {
   if (code === "mismatch") return `${who} didn't take the new password. Press Finish to try again.`;
   if (isNetwork(error)) return "The connection dropped. Press Finish to go on.";
   return "Something went wrong. Press Finish to try again.";
+}
+// An account of the pending role takes neither value (B.6.4, the Finish line).
+// canType: the page can offer a field for the one in use (it can't before Go on).
+export function neitherText(key, canType) {
+  const t = failureText({ code: "refused" }, key);
+  return canType ? t : t.replace(/ Type the one in use\.$/, " Press Go on first.");
 }
 // "Done": the copy-ready message (never the password) and where it works
 export function doneText(role) {

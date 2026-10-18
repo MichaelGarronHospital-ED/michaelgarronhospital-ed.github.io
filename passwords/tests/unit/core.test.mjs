@@ -640,7 +640,8 @@ test("a helper sign-in that lands on another uid is a refusal, and its app is cl
 
 test("the page's own account: an empty uid is not set up yet; another signed-in uid is signed out", async () => {
   const ad = makeFirebaseAdapter(sdkFake(), { mainAuth: { currentUser: { uid: "someone-else" } } });
-  await assert.rejects(() => ad.open(ACCOUNTS[0], "x"), (e) => e.code === "not-set-up");
+  // (an explicit empty uid: true before and after the real one is filled in; round 2 D-M1)
+  await assert.rejects(() => ad.open({ ...ACCOUNTS[0], uid: "" }, "x"), (e) => e.code === "not-set-up");
   await assert.rejects(() => ad.open(MAIN_TEST, "x"), (e) => e.code === "signed-out");
 });
 

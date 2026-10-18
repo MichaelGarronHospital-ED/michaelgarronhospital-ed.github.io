@@ -74,12 +74,13 @@ describe("shape refusals", () => {
     "iter as a string": good(1, { locks: [lock({ iter: "600000" })] }),
     "a second lock that is wrong": good(1, { locks: [lock(), lock({ iter: 1000 })] }),
     "oversize ct": good(1, { locks: [lock({ ct: "C".repeat(16385) })] }),
-    "a short salt": good(1, { locks: [lock({ salt: "S".repeat(19) })] }),
+    "a short salt (23, under 16 bytes in base64)": good(1, { locks: [lock({ salt: "S".repeat(23) })] }),
     "a long salt": good(1, { locks: [lock({ salt: "S".repeat(65) })] }),
     "a short iv": good(1, { locks: [lock({ iv: "I".repeat(15) })] }),
     "a lock that is not a map": good(1, { locks: ["x"] }),
   };
   for (const [name, d] of Object.entries(cases)) it(`refuses ${name}`, async () => { await assertFails(setDoc(vault(leader()), d)); });
+  it("the shortest allowed salt (24: 16 bytes in base64) is fine", async () => { await assertSucceeds(setDoc(vault(leader()), good(1, { locks: [lock({ salt: "S".repeat(24) })] }))); });
   it("the largest allowed ct is fine", async () => { await assertSucceeds(setDoc(vault(leader()), good(1, { locks: [lock({ ct: "C".repeat(16384) })] }))); });
   it("refuses a bad shape on update too", async () => { await seed(1); await assertFails(setDoc(vault(leader()), good(2, { locks: [] }))); });
 });
