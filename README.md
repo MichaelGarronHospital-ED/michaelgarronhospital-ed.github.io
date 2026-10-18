@@ -229,9 +229,10 @@ the Patient Hub statistics page always end up with the same three passwords.
 - **No password is ever in this repo**, in a test, or in a log. The sign-in lasts while
   the tab is open; a reload, Log out, 10 minutes without use or 5 minutes in the
   background signs out.
-- **Never delete the `mgh-ed-admin` account.** The rules and `passwords/config.js` know
-  it by its uid; a new account gets a new uid and the page refuses it until both are
-  updated (`set-passwords.py --apply` recreates it and says "Republish the rules with this
+- **Never delete the `mgh-ed-admin` account.** The rules, `passwords/config.js` and the
+  Patient Hub statistics check (`functions/lib/leadership.js`, `ADMIN_UID`) know it by its
+  uid; a new account gets a new uid and the page and statistics refuse it until all three
+  are updated (`set-passwords.py --apply` recreates it and says "Republish the rules with this
   uid"). A test keeps the uid in `config.js` equal to the one in `firestore.rules`.
 
 ### Honest limits

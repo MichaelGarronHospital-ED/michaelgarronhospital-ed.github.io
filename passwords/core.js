@@ -5,8 +5,9 @@
 //
 //  One password opens several accounts (Leadership: this page's own account,
 //  voting leadership@ and hiring admin@; ED: voting ed@ and hiring committee@;
-//  Guest: hiring applicant@). Patient Hub statistics check the Leadership
-//  password against hiring's admin@, so they follow it with nothing to paste.
+//  Guest: hiring applicant@). Patient Hub statistics check the Admin password
+//  against this page's own account (since 2026-10-18), so they follow it with
+//  nothing to paste.
 //
 //  What is new here (Phase B): the current values come from the vault (the
 //  encrypted copy in project mgh-ed-admin), so nobody types them. Every change
