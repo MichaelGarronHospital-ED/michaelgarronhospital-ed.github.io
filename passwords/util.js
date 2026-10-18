@@ -34,17 +34,45 @@ function trapTab(wrap, e) {
   else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
 }
 
+// Say something to screen readers through the dialog's one live region,
+// which is never replaced (round 1 m2): a step's title and its message.
+export function announce(text) {
+  const live = document.getElementById("flowLive");
+  if (!live) return;
+  live.textContent = "";
+  // a new text node each time, so the same words are read again
+  setTimeout(() => { live.textContent = text || ""; }, 30);
+}
+
+// Return on a field marked enterkeyhint="next" moves to the next field instead
+// of submitting (phones show "next" on the keyboard; round 1 D-M2).
+export function enterMovesOn(form) {
+  form.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || !e.target.matches || !e.target.matches('input[enterkeyhint="next"]')) return;
+    const fields = [...form.querySelectorAll("input:not([disabled])")].filter((x) => x.offsetParent !== null);
+    const nextField = fields[fields.indexOf(e.target) + 1];
+    if (nextField) { e.preventDefault(); nextField.focus(); }
+  });
+}
+
 // A small multi-step dialog. show(ctl) paints the first step; ctl has:
-//   ctl.step({ title, html, buttons: [{ label, kind: "filled"|"tinted"|"plain"|"danger", run, id, disabled }], wire })
-//     wire(body) runs after the step is painted (to add input handlers)
+//   ctl.step({ title, html, buttons: [{ label, kind: "filled"|"tinted"|"plain"|"danger", run, id, disabled, main }], wire })
+//     wire(body) runs after the step is painted (to add input handlers).
+//     The main button (main: true, else the last "filled" one) is the form's
+//     submit button: Return in a field presses it (round 1 D-M2).
 //   ctl.body, ctl.close(value)
 // Escape closes with null unless opts.sticky (or ctl.sticky is set while a
 // change runs). The page behind is inert while it is open.
 export function flowDialog(show, opts = {}) {
-  const wrap = document.getElementById("flowWrap");
+  const wrap = document.getElementById("flowWrap"), form = document.getElementById("flowForm");
   const title = document.getElementById("flowTitle"), body = document.getElementById("flowBody"), btns = document.getElementById("flowBtns");
   const behind = [...document.querySelectorAll("body > header, body > main")];
   const prevFocus = document.activeElement;
+  if (!form.dataset.wired) {
+    form.dataset.wired = "1";
+    form.addEventListener("submit", (e) => e.preventDefault());
+    enterMovesOn(form);
+  }
   return new Promise((resolve) => {
     let closed = false;
     const onKey = (e) => {
@@ -53,6 +81,7 @@ export function flowDialog(show, opts = {}) {
     };
     const ctl = {
       body, sticky: false,
+      get closed() { return closed; },
       close(v = null) {
         if (closed) return; closed = true;
         wrap.hidden = true; body.textContent = ""; btns.textContent = ""; title.textContent = "";
@@ -67,17 +96,21 @@ export function flowDialog(show, opts = {}) {
         title.textContent = t || "";
         body.innerHTML = html || "";
         btns.textContent = "";
+        const filled = buttons.filter((b) => b.kind === "filled");
+        const main = buttons.find((b) => b.main) || filled[filled.length - 1] || null;
         for (const b of buttons) {
           const el = document.createElement("button");
-          el.type = "button";
+          el.type = b === main ? "submit" : "button";
           el.className = "ed-btn " + ({ filled: "ed-btn-filled", tinted: "ed-btn-tinted", danger: "ed-btn-danger", plain: "ed-btn-plain" }[b.kind || "tinted"]);
           el.textContent = b.label;
           if (b.id) el.id = b.id;
           if (b.disabled) el.disabled = true;
-          el.addEventListener("click", () => b.run(ctl, el));
+          el.addEventListener("click", (e) => { e.preventDefault(); if (!el.disabled) b.run(ctl, el); });
           btns.appendChild(el);
         }
         if (wire) wire(body);
+        const msg = [...body.querySelectorAll(".pw-msg")].map((x) => x.textContent.trim()).find(Boolean);
+        announce([t, msg].filter(Boolean).join(". "));
         wrap.scrollTop = 0;
         if (!focus) return;
         // a phone: focus the title, so the keyboard stays closed and the

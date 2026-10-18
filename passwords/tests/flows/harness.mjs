@@ -183,7 +183,8 @@ export async function signIn(page, pw) {
 // the main view, after every row's quiet check finished
 export async function onMain(page, timeout = 40000) {
   await page.waitForSelector("#app:not([hidden]) .pw-rows", { timeout });
-  await page.waitForFunction(() => !document.querySelector("#app").textContent.includes("Checking with each tool"), null, { timeout });
+  await page.waitForFunction(() => document.querySelector("#app").dataset.quiet === "done"
+    && !document.querySelector("#app").textContent.includes("Checking with each tool"), null, { timeout });
 }
 export const gateText = (page) => page.$eval("#gerr", (e) => e.textContent);
 export const rowText = (page, r) => page.$eval(`#row-${r}`, (e) => e.textContent.replace(/\s+/g, " "));

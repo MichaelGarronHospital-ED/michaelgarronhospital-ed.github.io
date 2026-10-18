@@ -11,7 +11,7 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import * as H from "./harness.mjs";
-import { TEXT, staleText, differText, sameAsText, staleRowText, failureText, gateWrongText } from "../../core.js";
+import { TEXT, staleText, differText, sameAsText, staleRowText, failureText, gateWrongText, blockedBy } from "../../core.js";
 
 const V = H.V;
 const AXE = fs.readFileSync(new URL("../node_modules/axe-core/axe.min.js", import.meta.url), "utf8");
@@ -52,6 +52,16 @@ for (const kind of H.browsersToRun()) {
         if (H.callOf(req).email !== H.emailOf(key) || (dropped && !always)) return false;
         dropped = true; await route.abort(); return true;
       };
+    };
+    const finishFromRow = async (p, role, value) => {
+      await H.rowButton(p, role, "finish").click();
+      await H.waitDialog(p, "Finish the change");
+      assert.equal(await p.$eval("#finVal [aria-hidden]", (e) => e.textContent), DOTS, "the new value is shown before Show");
+      await p.click("#finShow");
+      assert.equal(await p.textContent("#finVal"), value);
+      await p.click("#finShow");
+      assert.ok(!(await p.textContent("#finVal")).includes(value));
+      await H.dialogClick(p, "Finish the change");
     };
     const dropCommitsAfter = (p, n) => {
       let commits = 0;
@@ -157,7 +167,7 @@ for (const kind of H.browsersToRun()) {
       const q = await signedIn();
       assert.match(await H.rowText(q, "ed"), /A change of the ED password didn't finish \(started [A-Z][a-z]{2} \d+\)\./);
       assert.ok(!(await q.textContent("#app")).includes("doesn't accept"), "the quiet check reported the pending role as stale");
-      await H.rowButton(q, "ed", "finish").click();
+      await finishFromRow(q, "ed", V.ed2);
       await H.waitDialog(q, "Done");
       await accepts("ed", V.ed2); await refuses("ed", V.ed);
       await finish(q);
@@ -178,7 +188,7 @@ for (const kind of H.browsersToRun()) {
       await waitGate(q, /Incorrect password/);
       await H.signIn(q, V.lead2);
       await H.onMain(q);
-      await H.rowButton(q, "leadership", "finish").click();
+      await finishFromRow(q, "leadership", V.lead2);
       await H.waitDialog(q, "Done");
       await accepts("leadership", V.lead2);
       await finish(q);
@@ -223,7 +233,7 @@ for (const kind of H.browsersToRun()) {
       await H.dialogClick(r, "Go on");
       await r.waitForFunction((t) => document.querySelector("#pwErr").textContent === t, TEXT.notNext);
       await r.fill("#pwNext", V.lead2);
-      await H.dialogClick(r, "Go on");
+      await r.press("#pwNext", "Enter");          // Return presses Go on (round 1 D-M2)
       await H.waitDialog(r, "Done");
       await accepts("leadership", V.lead2);
       assert.equal((await H.rawVault()).locks.length, 1);
@@ -320,7 +330,7 @@ for (const kind of H.browsersToRun()) {
       await H.dialogClick(p, "Close");
       assert.equal(await H.rowButton(p, "ed", "cancel").count(), 0, "Cancel offered after an account changed");
       await H.setDisabled("hiring:committee", false);
-      await H.rowButton(p, "ed", "finish").click();
+      await finishFromRow(p, "ed", V.ed2);
       await H.waitDialog(p, "Done");
       await accepts("ed", V.ed2);
       await finish(p);
@@ -387,6 +397,147 @@ for (const kind of H.browsersToRun()) {
       await finish(p);
     });
 
+    it("r1 Return: moves to the next field, then presses the main button (first use and Change); each step is read out", T, async () => {
+      await H.reset();
+      const p = await open();
+      await H.signIn(p, V.lead);
+      await p.waitForSelector("#fuEd", { timeout: 30000 });
+      await p.fill("#fuEd", V.ed);
+      await p.press("#fuEd", "Enter");
+      assert.equal(await p.evaluate(() => document.activeElement.id), "fuGuest");
+      await p.fill("#fuGuest", V.guest);
+      await p.press("#fuGuest", "Enter");
+      await H.onMain(p);
+      await H.rowButton(p, "ed", "change").click();
+      await H.waitDialog(p, "New ED password");
+      assert.equal(await p.getAttribute("#pwNew", "enterkeyhint"), "next");
+      assert.equal(await p.getAttribute("#pwRep", "enterkeyhint"), "go");
+      await p.evaluate(() => {
+        window.__live = [];
+        const el = document.querySelector("#flowLive");
+        new MutationObserver(() => { if (el.textContent) window.__live.push(el.textContent); }).observe(el, { childList: true, characterData: true, subtree: true });
+      });
+      await p.fill("#pwNew", V.ed2);
+      await p.press("#pwNew", "Enter");
+      assert.equal(await p.evaluate(() => document.activeElement.id), "pwRep");
+      await p.fill("#pwRep", V.ed2);
+      await p.press("#pwRep", "Enter");
+      await H.waitDialog(p, "Done");
+      await p.waitForFunction(() => window.__live.some((t) => t.startsWith("Done")));
+      const live = await p.evaluate(() => window.__live);
+      assert.ok(live.some((t) => t.startsWith("Changing the ED password")), "the progress was not read out");
+      assert.equal(await p.$eval("#flowLive", (e) => e.getAttribute("role")), "status");
+      await accepts("ed", V.ed2);
+      await finish(p);
+    });
+
+    it("r1 pending role: an account that takes neither value is on the Finish line; Type the one in use with Return finishes", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      dropUpdateOf(p, "hiring:committee");
+      await H.changeRole(p, "ed", V.ed2);
+      await H.waitDialog(p, "Not finished");
+      await finish(p, { allowConsole: ABORTED });
+      await H.setPassword("hiring:committee", V.console);
+      const q = await signedIn();
+      assert.ok((await H.rowText(q, "ed")).includes(failureText({ code: "refused" }, "hiring:committee")));
+      await H.rowButton(q, "ed", "fix").click();
+      await H.waitDialog(q, "Not finished");
+      await q.fill("#pwFix", V.console);
+      await q.press("#pwFix", "Enter");
+      await H.waitDialog(q, "Done");
+      await accepts("ed", V.ed2);
+      await finish(q);
+    });
+
+    it("r1 another role's change pending: a stale row says to finish that first, with no Type the one in use", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      dropUpdateOf(p, "hiring:applicant");
+      await H.changeRole(p, "guest", V.guest2);
+      await H.waitDialog(p, "Not finished");
+      await finish(p, { allowConsole: ABORTED });
+      await H.setPassword("voting:ed", V.console);
+      const q = await signedIn();
+      const t = await H.rowText(q, "ed");
+      assert.ok(t.includes(staleText("voting:ed")));
+      assert.ok(t.includes(blockedBy({ pending: { role: "guest" } }, "ed")));
+      assert.equal(await H.rowButton(q, "ed", "stale").count(), 0);
+      await finish(q);
+    });
+
+    it("r1 first use: two roles not the same everywhere: both rows marked, the first Change opens, Cancel keeps both", T, async () => {
+      await H.reset();
+      await H.setPassword("voting:leadership", V.other);
+      await H.setPassword("voting:ed", V.console);
+      const p = await open();
+      await H.signIn(p, V.lead);
+      await p.waitForSelector("#fuEd", { timeout: 30000 });
+      await p.fill("#fuEd", V.ed); await p.fill("#fuGuest", V.guest); await p.click("#fuGo");
+      await H.waitDialog(p, "The Leadership password in use");
+      await p.fill("#pwTyped", V.other);
+      await p.press("#pwTyped", "Enter");
+      await H.waitDialog(p, "The ED password in use");
+      await p.fill("#pwTyped", V.console);
+      await p.press("#pwTyped", "Enter");
+      await H.waitDialog(p, "New Leadership password");
+      assert.ok((await H.dialogText(p)).includes(differText("leadership", {})));
+      await H.dialogClick(p, "Cancel");
+      await H.onMain(p);
+      assert.ok((await H.rowText(p, "leadership")).includes(staleRowText("leadership")));
+      assert.ok((await H.rowText(p, "ed")).includes(staleRowText("ed")));
+      assert.equal(await H.rowButton(p, "ed", "change").isDisabled(), false);
+      assert.equal(await H.rowButton(p, "ed", "change").textContent(), "Set a new ED password");
+      await finish(p);
+    });
+
+    it("r1 first use: cancelling the follow-up dialog clears Checking", T, async () => {
+      await H.reset();
+      await H.setPassword("voting:ed", V.console);
+      const p = await open();
+      await H.signIn(p, V.lead);
+      await p.waitForSelector("#fuEd", { timeout: 30000 });
+      await p.fill("#fuEd", V.ed); await p.fill("#fuGuest", V.guest); await p.click("#fuGo");
+      await H.waitDialog(p, "The ED password in use");
+      await H.dialogClick(p, "Cancel");
+      assert.equal(await p.textContent("#fuErr"), "");
+      await finish(p);
+    });
+
+    it("r1 hidden tab resets shown fields; a blocked Copy says so in the row; a page from the back/forward cache starts again", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      await H.rowButton(p, "ed", "change").click();
+      await H.waitDialog(p, "New ED password");
+      await p.fill("#pwNew", V.ed2);
+      await p.click('button[data-show="pwNew"]');
+      assert.equal(await p.getAttribute("#pwNew", "type"), "text");
+      await p.evaluate(() => window.__setHidden(true));
+      assert.equal(await p.getAttribute("#pwNew", "type"), "password");
+      assert.equal(await p.textContent('button[data-show="pwNew"]'), "Show");
+      await p.evaluate(() => window.__setHidden(false));
+      await H.dialogClick(p, "Cancel");
+      await p.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new Error("blocked")) } }));
+      await H.rowButton(p, "guest", "copy").click();
+      await p.waitForSelector("#copyNote-guest:not([hidden])");
+      assert.match(await p.textContent("#copyNote-guest"), /didn't let the page copy it/);
+      assert.equal(await p.evaluate(() => String(getSelection())), V.guest);
+      await p.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })));
+      await p.waitForFunction(() => window.__edReady === true && !document.querySelector("#gate").hidden && document.querySelector("#app").hidden, null, { timeout: 20000 });
+      await finish(p);
+    });
+
+    it("r1 in a frame with boot.js blocked, the page module still refuses to start", T, async () => {
+      const f = await open();
+      await f.route("**/passwords/boot.js*", (r) => r.abort());
+      await f.goto(`${H.BASE}/frame.html`);
+      const frame = f.frames().find((x) => x.url().endsWith("/passwords.html"));
+      await frame.waitForLoadState("load");
+      await f.waitForTimeout(1500);
+      assert.notEqual(await frame.evaluate(() => window.__edReady), true);
+      await H.closePage(f);
+    });
+
     for (const scheme of ["light", "dark"]) {
       it(`13 page rules (${scheme}): refuses in a frame; no policy violation; no sideways scroll; 44 px buttons, 16 px fields; a failed Save's message on top`, T, async () => {
         await H.reset(); await H.seedVault(CUR);
@@ -404,6 +555,9 @@ for (const kind of H.browsersToRun()) {
             const r = b.getBoundingClientRect(); if (!r.width) continue;
             if (b.tagName === "BUTTON" && r.height < 44) bad.push(`${b.textContent} ${Math.round(r.height)}px tall`);
             if (b.tagName !== "BUTTON" && parseFloat(getComputedStyle(b).fontSize) < 16) bad.push(`${b.id} text ${getComputedStyle(b).fontSize}`);
+            // nothing remembered or corrected (round 1 m6)
+            if (b.tagName === "INPUT" && !(b.getAttribute("autocomplete") === "off" && b.getAttribute("autocorrect") === "off"
+              && b.getAttribute("autocapitalize") === "off" && b.getAttribute("spellcheck") === "false")) bad.push(`${b.id} may be remembered or corrected`);
           }
           return bad;
         });
@@ -432,9 +586,9 @@ for (const kind of H.browsersToRun()) {
         await finish(p);
       });
 
-      it(`14 axe (${scheme}): gate, main view and Change dialog`, T, async () => {
-        await H.reset(); await H.seedVault(CUR);
-        const p = await open({ scheme });
+      it(`14 axe (${scheme}): gate, first use, main view, Change, progress, Done, and Type the one in use`, T, async () => {
+        await H.reset();
+        let p = await open({ scheme });
         const axe = async (where) => {
           await p.evaluate(AXE);
           const v = await p.evaluate(async (tags) => {
@@ -444,11 +598,36 @@ for (const kind of H.browsersToRun()) {
           assert.deepEqual(v, [], `${where}: ${v.join(" | ")}`);
         };
         await axe("gate");
-        await H.signIn(p, V.lead); await H.onMain(p);
+        await H.signIn(p, V.lead);
+        await p.waitForSelector("#fuEd", { timeout: 30000 });
+        await axe("first use");
+        await p.fill("#fuEd", V.ed); await p.fill("#fuGuest", V.guest); await p.click("#fuGo");
+        await H.onMain(p);
         await axe("main view");
         await H.rowButton(p, "ed", "change").click();
         await H.waitDialog(p, "New ED password");
         await axe("Change dialog");
+        // hold the first account's update so the progress step stays on screen
+        let release; const held = new Promise((r) => { release = r; });
+        let holding = false;
+        p.__intercept = async (route, req) => {
+          if (holding || !req.url().includes("accounts:update")) return false;
+          holding = true; await held; return false;
+        };
+        await H.saveNew(p, V.ed2);
+        await H.waitDialog(p, "Changing the ED password");
+        await p.waitForFunction(() => document.querySelector(".pw-steps .is-now"));
+        await axe("progress");
+        release();
+        await H.waitDialog(p, "Done");
+        await axe("Done");
+        await H.dialogClick(p, "Close");
+        await H.closePage(p);
+        await H.setPassword("voting:ed", V.console);
+        p = await signedIn(V.lead, { scheme });
+        await H.rowButton(p, "ed", "stale").click();
+        await H.waitDialog(p, "The ED password in use");
+        await axe("Type the one in use");
         await H.dialogClick(p, "Cancel");
         await finish(p);
       });
