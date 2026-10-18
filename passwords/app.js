@@ -464,12 +464,15 @@ async function runFlow(ctl, r, start, again = {}) {
 }
 
 async function elsewhere(ctl) {
+  const before = S.session.content ? JSON.parse(JSON.stringify(S.session.content)) : null;
   try { await S.session.reload(); }
   catch (e) { if (e && e.code === "locked-out") return signOut("signed-out"); }
-  diffFromClearIfPending();
+  // forget what this tab knew about any role that moved, and check again (round 3)
+  const moved = C.movedRoles(before, S.session.content).filter((r) => diffFrom[r] || (Q && Q.stale[r]));
+  for (const r of moved) { delete diffFrom[r]; if (Q) delete Q.stale[r]; }
   stepNote(ctl, "Changed on another device", C.TEXT.changedElsewhere, "");
+  if (moved.length) runQuiet();
 }
-function diffFromClearIfPending() { const p = S.session.content.pending; if (p) delete diffFrom[p.role]; }
 
 function stepDone(ctl, r) {
   const d = C.doneText(r);

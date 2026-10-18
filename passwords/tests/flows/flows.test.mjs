@@ -397,6 +397,56 @@ for (const kind of H.browsersToRun()) {
       await finish(p);
     });
 
+    it("r3 another device changes ED while this tab remembers ED's old values: Change here says changed elsewhere, drops the old mark, then saves", T, async () => {
+      await H.reset();
+      await H.setPassword("hiring:admin", V.other);
+      await H.setPassword("hiring:committee", V.console);
+      // tab A: first use finds both roles differ; the first Change is cancelled
+      const a = await open();
+      await H.signIn(a, V.lead);
+      await a.waitForSelector("#fuEd", { timeout: 30000 });
+      await a.fill("#fuEd", V.ed); await a.fill("#fuGuest", V.guest); await a.click("#fuGo");
+      await H.waitDialog(a, "The Leadership password in use");
+      await a.fill("#pwTyped", V.other); await a.press("#pwTyped", "Enter");
+      await H.waitDialog(a, "The ED password in use");
+      await a.fill("#pwTyped", V.console); await a.press("#pwTyped", "Enter");
+      await H.waitDialog(a, "New Leadership password");
+      await H.dialogClick(a, "Cancel");
+      await H.onMain(a);
+      assert.ok((await H.rowText(a, "ed")).includes(staleRowText("ed")));
+      // device B: types the values in use, then changes ED
+      const b = await signedIn();
+      await H.rowButton(b, "leadership", "stale").click();
+      await H.waitDialog(b, "The Leadership password in use");
+      await b.fill("#pwTyped", V.other); await b.press("#pwTyped", "Enter");
+      await H.waitDialog(b, "New Leadership password");
+      await H.dialogClick(b, "Cancel");
+      await H.rowButton(b, "ed", "stale").click();
+      await H.waitDialog(b, "The ED password in use");
+      await b.fill("#pwTyped", V.console); await b.press("#pwTyped", "Enter");
+      await H.waitDialog(b, "New ED password");
+      await H.saveNew(b, V.ed2);
+      await H.waitDialog(b, "Done", 90000);
+      await accepts("ed", V.ed2);
+      await finish(b);
+      // tab A: the Leadership change finds the copy moved
+      await H.rowButton(a, "leadership", "change").click();
+      await H.waitDialog(a, "New Leadership password");
+      await H.saveNew(a, V.lead2);
+      await H.waitDialog(a, "Changed on another device", 90000);
+      await H.dialogClick(a, "Close");
+      await H.onMain(a);
+      assert.ok(!(await H.rowText(a, "ed")).includes(staleRowText("ed")), "the ED row still says the tools disagree");
+      assert.ok(!(await H.rowText(a, "ed")).includes("doesn't accept"));
+      await H.rowButton(a, "leadership", "change").click();
+      await H.waitDialog(a, "New Leadership password");
+      await H.saveNew(a, V.lead2);
+      await H.waitDialog(a, "Done", 90000);
+      await accepts("leadership", V.lead2);
+      await accepts("ed", V.ed2);
+      await finish(a);
+    });
+
     it("r2 first use with two roles whose hiring accounts differ: save the Leadership change, then the ED one", T, async () => {
       await H.reset();
       await H.setPassword("hiring:admin", V.other);

@@ -680,6 +680,19 @@ function sortOut(c, role, k) {
   return { outcome: "save", value: v, known: k };
 }
 
+// After a reload (another device wrote): the roles whose remembered "the
+// tools disagree" values may be out of date, because that role's saved value
+// or date moved, or a change of it started, finished or was cancelled
+// elsewhere (round 3). The page forgets those values; the quiet check finds
+// the truth again.
+export function movedRoles(before, after) {
+  const pRole = (c) => (c && c.pending ? c.pending.role : null);
+  const at = (c, r) => ((c && c.changedAt) || {})[r] ?? null;
+  return ROLES.filter((r) => !before || !after
+    || before.roles[r] !== after.roles[r] || at(before, r) !== at(after, r)
+    || (pRole(before) === r) !== (pRole(after) === r) || pRole(after) === r);
+}
+
 // "save": the role's saved value becomes the one every account takes (one
 // write). Its "changed" date is not known, so it is cleared.
 export async function saveStale({ session }, role, value) {
