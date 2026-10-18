@@ -7,7 +7,7 @@
   "scripts": {
     "test": "npm run test:unit && npm run test:rules",
     "test:unit": "node --test unit/*.test.mjs",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-mgh-ed-admin \"node --test rules/*.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-mgh-ed-admin \"node --test --test-concurrency=1 rules/*.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",
