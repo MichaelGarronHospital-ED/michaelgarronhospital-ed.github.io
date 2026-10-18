@@ -376,7 +376,7 @@ That mailbox is the login for a department account on each service:
 | Service | Department account | Role |
 |---|---|---|
 | GitHub (this org) | `MGH-ED-Admin` | Owner |
-| Firebase: `ed-motion-voting-99b96` (voting), `mgh-ed-hiring` (hiring), `mgh-ed-admin` (passwords page; not created yet) | Google account on the mailbox | Owner (the only one for `mgh-ed-admin`) |
+| Firebase: `ed-motion-voting-99b96` (voting), `mgh-ed-hiring` (hiring), `mgh-ed-admin` (passwords page) | Google account on the mailbox | Owner (the only one for `mgh-ed-admin`) |
 | Cloudflare | Account on the mailbox | Owner. Patient Hub runs here (project `mgh-ed-patient-hub`) since 2026-10-14. The old address `mgh-ed-patient-guide.pages.dev` only redirects and is due to be retired around 2027-01-14. |
 
 - Every department account has two-factor sign-in. Its password and backup

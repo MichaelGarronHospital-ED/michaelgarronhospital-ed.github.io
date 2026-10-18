@@ -51,7 +51,7 @@ export const CONFIGS = { admin: ADMIN_FIREBASE, hiring: HIRING_FIREBASE, voting:
 // The page's own account (admin:leadership) is FIRST. Hiring's Leadership
 // account is last of the Leadership ones: Patient Hub statistics follow it.
 export const ACCOUNTS = [
-  { key: "admin:leadership", project: "admin", role: "leadership", email: "leadership@mgh-ed-admin.invalid", uid: "" },
+  { key: "admin:leadership", project: "admin", role: "leadership", email: "leadership@mgh-ed-admin.invalid", uid: "97uKphgOnYOgsCIQ1oWInDtCpy03" },
   { key: "voting:leadership", project: "voting", role: "leadership", email: "leadership@mgh-ed-voting.invalid", uid: "3eigCLaK0RQ5PmVhxfDgI0qoYzQ2" },
   { key: "hiring:admin", project: "hiring", role: "leadership", email: "admin@mgh-ed-hiring.invalid", uid: "ULgtfRrkAVPS2aT69Tc4CjMqbsx1" },
   { key: "voting:ed", project: "voting", role: "ed", email: "ed@mgh-ed-voting.invalid", uid: "CXyo7yciWpc78J1TQYRzrPpu77C3" },
