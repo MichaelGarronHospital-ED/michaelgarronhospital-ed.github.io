@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dev-only tests for the ED tools passwords page. The page itself has no build step and no dependencies; nothing here is published.",
+  "description": "Dev-only tests for the ED tools passwords page. GitHub Pages publishes this folder too (the repo is public); nothing in it is secret.",
   "scripts": {
     "test": "npm run test:unit && npm run test:rules && npm run test:flows",
     "test:unit": "node --test unit/*.test.mjs",

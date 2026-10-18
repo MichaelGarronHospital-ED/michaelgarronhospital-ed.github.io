@@ -185,7 +185,10 @@ python3 -m unittest discover -s tests -p 'test_check_tools.py'
 
 **Address:** https://michaelgarronhospital-ed.github.io/passwords.html (Leadership only).
 **Not linked yet:** the gear on the dashboard still opens Physician Hiring's old page. A later
-pull request ("PR B") points the gear here, after the maintainer's phone check.
+pull request ("PR B") points the gear here, after the maintainer's phone check. PR B also
+flips the test that checks `index.html` does not link this page
+(`passwords/tests/unit/page.test.mjs`) and adds the gear address check to
+`tests/test_page.py` (design B.7.2).
 
 ### What it does
 
@@ -195,10 +198,16 @@ only for the new password twice: the page signs in to each account with the save
 value seconds before changing it, in a fixed order, so Physician Hiring, Motion Voting and
 the Patient Hub statistics page always end up with the same three passwords.
 
+- **Keep the page open until it says Done.** A computer warns before closing the page
+  while a change runs; iPhone Safari does not show that warning.
 - **If a change stops part way** (a closed tab, a lost connection): open the page on any
-  device and press **Finish the change**. Nothing needs typing, except in one case: a
-  Leadership change stopped before anything changed asks for the new Leadership password
-  again (**Go on**), or offers **Cancel this change**.
+  device and press **Finish the change**. It first shows what it sets the password to
+  (hidden until Show), so a change nobody here started can be spotted. Nothing needs
+  typing, except in one case: a Leadership change stopped before anything changed asks
+  for the new Leadership password again (**Go on**), or offers **Cancel this change**.
+- **Stuck with only Go on, and nobody knows the new Leadership password:** the way out is
+  the maintainer's `set-passwords.py --apply` (in the workspace), which sets all three
+  passwords and makes a new saved copy.
 - **If a tool's password was changed another way** (the Firebase console, the maintainer's
   script), the page says which tool no longer takes the saved one and asks for the one in
   use. If the tools then disagree, it asks for one new password for all of them.
@@ -241,6 +250,11 @@ the Patient Hub statistics page always end up with the same three passwords.
   content policy, which help.
 - Anyone who can change this repo can change the page. Review every change to
   `passwords.html` and `passwords/` with care.
+- During a Leadership change, someone who knows only the old Leadership password can still
+  read the saved copy for a while: from the start of the change until the page's own
+  account has the new password, and for up to about an hour after (a sign-in stays valid
+  that long). They could then try to guess the new Leadership password offline. Choose a
+  strong new Leadership password: three or four words.
 
 ### Files
 
@@ -256,7 +270,7 @@ the Patient Hub statistics page always end up with the same three passwords.
 | `passwords/config.js` | Public web configs and the six accounts (emails and uids). No password. |
 | `passwords/vault-cli.mjs` | For the maintainer's `set-passwords.py`: seals and checks the vault from a terminal. |
 | `passwords/firestore.rules`, `firebase.json`, `.firebaserc` | The vault rules and the emulator settings. |
-| `passwords/tests/` | Tests only (dev-only tools; nothing here is part of the page). |
+| `passwords/tests/` | Tests only (dev-only tools). GitHub Pages publishes this folder too, as it publishes every file in this public repo; nothing in it is secret. |
 | `.github/workflows/passwords.yml` | Runs the tests on GitHub when these files change (free, no schedule). |
 
 Every script on the page carries the same `?v=` number; change them all together (a test
@@ -268,6 +282,7 @@ checks).
 cd passwords/tests
 mkdir -p node_modules && xattr -w 'com.apple.fileprovider.ignore#P' 1 node_modules   # keep it out of iCloud (Mac)
 npm ci
+npx playwright-core install chromium webkit   # the test browsers, once (skip Chromium if CHROME is set)
 npm run test:unit     # rules of a change, encryption, hygiene, about 15 seconds
 npm run test:rules    # the vault rules in the Firestore emulator
 npm run test:flows    # the page in Chromium and WebKit against the emulators
@@ -281,13 +296,29 @@ Every value in the tests is invented.
 
 ### Setting it up (once, by the maintainer)
 
-Design `designs/passwords-design.md` (workspace, section B.2 and B.10) has the steps: the
-department account creates the project, then the account (`set-passwords.py
---create-admin-account`), then the account's uid goes in `passwords/config.js` and
-`passwords/firestore.rules` and the web config in `ADMIN_FIREBASE`, and the rules are
-published from `passwords/` with
-`passwords/tests/node_modules/.bin/firebase deploy --only firestore:rules --project mgh-ed-admin`.
-Until then the page says "This page is not ready yet" and never tries to sign in.
+Design `designs/passwords-design.md` (workspace, sections B.2 and B.10) has the steps:
+
+1. The department account creates the project (B.2.2 A and B).
+2. The account: `set-passwords.py --create-admin-account` (workspace). It prints the uid.
+3. **Fill in, all in one commit:**
+   - `passwords/config.js`: the `ADMIN_FIREBASE` values (`apiKey`, `appId`, from
+     `apps:sdkconfig`), and the uid on the `admin:leadership` line;
+   - `passwords/firestore.rules`: the same uid in place of `ADMIN_UID_NOT_SET`;
+   - the workspace's `role-accounts.json`: the same uid as the "admin" account (a test
+     compares it when the file is there);
+   - this README: remove "(not created yet)" from the Firebase line under "Ownership and
+     handover";
+   - if this page was ever published before with the placeholders, bump every `?v=` in
+     `passwords.html` and `passwords/` (a test keeps them equal).
+   The tests still pass with the real values filled in.
+4. Publish the rules. From `passwords/`:
+   `tests/node_modules/.bin/firebase deploy --only firestore:rules --project mgh-ed-admin`.
+5. The maintainer's phone check (B.10 step 5). **Before** the real Guest change and the
+   change back, check that today's Guest password is at least 10 characters, has no word
+   "password" in it, and no space at either end. If it isn't, the page would refuse to
+   change it back: change it to a new value instead and keep that one.
+
+Until step 3 the page says "This page is not ready yet" and never tries to sign in.
 
 ## Hosting
 
