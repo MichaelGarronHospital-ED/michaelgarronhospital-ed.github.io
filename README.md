@@ -318,7 +318,7 @@ Design `designs/passwords-design.md` (workspace, sections B.2 and B.10) has the 
    (Chrome and Safari), a wrong password says "Incorrect password.", it refuses in a
    frame, and a phone screen has no sideways scroll.
 6. The maintainer's phone check (B.10 step 5). **Before** the real Guest change and the
-   change back, check that today's Guest password is at least 10 characters, has no word
+   change back, check that today's Guest password is at least 6 characters, has no word
    "password" in it, and no space at either end. If it isn't, the page would refuse to
    change it back: change it to a new value instead and keep that one.
 
