@@ -5,7 +5,8 @@ Live at https://michaelgarronhospital-ed.github.io/ (this repo's name makes it t
 
 ## Stack and commands
 
-- Plain HTML, CSS and JS. No build, no dependencies. Checks: `python3 scripts/check_tools.py`
+- Plain HTML, CSS and JS. No build, no dependencies (the passwords page's tests in
+  `passwords/tests/` have dev-only ones). Checks: `python3 scripts/check_tools.py`
   (standard library only; `--write` rewrites the fallback list, `--live` HEADs every link);
   tests in `tests/`: `python3 -m unittest discover -s tests -p 'test_check_tools.py'` and
   `~/.venvs/mgh-ed-tools/bin/python -m unittest discover -s tests -p 'test_page.py'`
@@ -57,3 +58,33 @@ status check (it would block the bot's own save and the "saved to main by mistak
   `app.js`; the checker reads them.
 - All text: plain words, no em dashes (the checker fails on one in `tools.json`).
 - Local folder is `MGH-ED-Tools/dashboard`; see `../README.md` for the whole set of tools.
+
+## Passwords page (`passwords.html`, `passwords/`)
+
+The one sign-in page in this repo (design: workspace `designs/passwords-design.md`, Phase B).
+README "Passwords page" explains it for people. Not linked from `index.html` until PR B
+(the gear); do not link it before Alvin's phone check.
+
+- Never a real password anywhere: not in the repo, a test, a commit or a log. Tests use
+  invented values only. Nothing on the page may write a value to storage, the URL, the
+  console or any Firestore field in clear (the flows check).
+- `passwords/core.js` holds every rule and every message; keep it close to hiring's
+  `js/passwords.js` (same names, same adapter) so a reviewer can diff them.
+- Content policy is in `passwords.html` (B.6.1, a test pins it): no inline script, no
+  inline style, no `style=` or `on...=` attribute, even inside JS strings. Every `?v=` in
+  `passwords/` and `passwords.html` is equal; bump them together.
+- `passwords/config.js`: `ADMIN_FIREBASE` stays the FIRST object, with no nested braces
+  (the workspace scripts read its apiKey with a pattern). The admin uid in `config.js`
+  equals the one in `firestore.rules` (a test). Never delete the `mgh-ed-admin` account.
+- `passwords/vault-cli.mjs` is a fixed interface for the workspace's `set-passwords.py`:
+  `seal` and `check`, one JSON object on stdin, JSON on stdout, never a value printed.
+  Do not change it without changing that script.
+- Tests: `cd passwords/tests && npm test` (unit, rules, flows); `test:unit`, `test:rules`,
+  `test:flows` alone. Emulators on 8086 / 9096 / 4406 / 4506, page on 8097, project
+  `demo-mgh-ed-admin`; hiring's emulators use 8080 / 9099 and may run at the same time.
+  `passwords/tests/site*/` and `node_modules/` are git-ignored; mark `node_modules` out of
+  iCloud before `npm ci`.
+- `.github/workflows/passwords.yml` runs unit, rules and flows (Chrome) on changes to
+  these files only. `check.yml` and `scripts/check_tools.py` do not look at this page.
+- Live Firebase (`mgh-ed-admin`): created, the account made and rules published only by
+  the steps in the design, with Alvin. Never from a test.
