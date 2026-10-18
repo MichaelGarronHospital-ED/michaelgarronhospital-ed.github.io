@@ -11,7 +11,7 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import * as H from "./harness.mjs";
-import { TEXT, staleText, differText, sameAsText, staleRowText, failureText, gateWrongText, blockedBy } from "../../core.js";
+import { TEXT, TIMING, staleText, differText, sameAsText, staleRowText, failureText, gateWrongText, blockedBy } from "../../core.js";
 
 const V = H.V;
 const AXE = fs.readFileSync(new URL("../node_modules/axe-core/axe.min.js", import.meta.url), "utf8");
@@ -128,6 +128,22 @@ for (const kind of H.browsersToRun()) {
       const copied = (await H.rowButton(p, "guest", "copy").textContent()) === "Copied";
       if (copied && kind === "chromium") assert.equal(await p.evaluate(() => navigator.clipboard.readText()), V.guest);
       if (!copied) assert.equal(await p.evaluate(() => String(getSelection())), V.guest, "blocked copy: not shown and selected");
+      if (copied) {
+        // pressed again while it still says Copied: the words come back all the same (review round 2)
+        await p.clock.fastForward(TIMING.copiedMs + 500);
+        const btnText = () => p.$eval('#row-guest button[data-act="copy"]', (e) => e.textContent);
+        await p.waitForFunction(() => document.querySelector('#row-guest button[data-act="copy"]').textContent === "Copy", null, { timeout: 5000 });
+        await H.rowButton(p, "guest", "copy").click();
+        await p.waitForFunction(() => document.querySelector('#row-guest button[data-act="copy"]').textContent === "Copied", null, { timeout: 5000 });
+        await H.rowButton(p, "guest", "copy").click();
+        await p.waitForFunction(() => document.querySelector('#row-guest button[data-act="copy"]').getAttribute("aria-label") === "Copied", null, { timeout: 5000 });
+        assert.equal(await btnText(), "Copied");
+        await H.sleep(500);   // let the second press's clipboard write finish before time jumps
+        await p.clock.fastForward(TIMING.copiedMs + 500);
+        await p.waitForFunction(() => document.querySelector('#row-guest button[data-act="copy"]').textContent === "Copy", null, { timeout: 5000 });
+        assert.equal(await H.rowButton(p, "guest", "copy").getAttribute("aria-label"), "Copy the Guest password");
+        assert.equal(await H.rowButton(p, "guest", "copy").getAttribute("title"), "Copy the Guest password");
+      }
       await finish(p);
     });
 

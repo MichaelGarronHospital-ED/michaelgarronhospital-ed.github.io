@@ -28,9 +28,9 @@ test("no inline script, no inline style, no inline handler", () => {
 
 test("boot.js runs first as a classic script, then the module; the shared look before the page's own", () => {
   const scripts = [...html.matchAll(/<script ([^>]*)><\/script>/g)].map((m) => m[1]);
-  assert.deepEqual(scripts, ['src="passwords/boot.js?v=3"', 'type="module" src="passwords/app.js?v=3"']);
+  assert.deepEqual(scripts, ['src="passwords/boot.js?v=5"', 'type="module" src="passwords/app.js?v=5"']);
   const css = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(css, ["shared/ed-ui.css?v=3", "passwords/styles.css?v=3"]);
+  assert.deepEqual(css, ["shared/ed-ui.css?v=5", "passwords/styles.css?v=5"]);
 });
 
 test("the dashboard gear opens this page (PR B, after Alvin's phone check 2026-10-18)", () => {

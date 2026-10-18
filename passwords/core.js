@@ -37,8 +37,8 @@
 //  `store` is store.js (read, write); the tests pass a fake.
 // ============================================================================
 
-import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=3";
-import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=3";
+import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=5";
+import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=5";
 
 export const ROLES = Object.freeze(["leadership", "ed", "guest"]);
 export const ROLE_WORD = Object.freeze({ leadership: "Admin", ed: "ED", guest: "Guest" });
@@ -841,16 +841,15 @@ export const longDay = (iso) => { const d = iso ? new Date(iso) : null; return d
 const toolTitle = (a) => TOOL_TITLE[a.project];
 
 export const TEXT = Object.freeze({
-  intro: "The Admin, ED and Guest passwords open Physician Hiring, Motion Voting and the Patient Hub statistics page. Changing one here changes it everywhere.",
+  intro: "Change a password here and it changes in every tool.",
   gateTitle: "ED tools passwords",
-  gateLead: "Enter the Admin password to see and change the ED tools passwords.",
   opening: "Opening...",
   firstUse: "First time here. Type the ED and Guest passwords in use now. This page checks them with every tool, then keeps an encrypted copy so anyone with the Admin password can see them here.",
   recovery: "The saved copy was made with an older Admin password. Type the ED and Guest passwords in use now to make a new copy.",
   refusedDoc: "The saved copy can't be opened. Type the ED and Guest passwords in use now to make a new copy.",
   changedElsewhere: "This was just changed on another device. Here is the latest.",
   signedOut: "You were signed out, probably because a password changed.",
-  hint: "At least 6 characters. Three or four words are easy to say and hard to guess. Not a password in use now anywhere.",
+  hint: "At least 6 characters. Three or four words work well. Not one in use now.",
   keepOpen: "Keep this page open until it says Done.",
   tellPeople: "Tell people in person or by phone. Never email a password.",
   typedWrong: "That didn't work either. Check it was typed right.",

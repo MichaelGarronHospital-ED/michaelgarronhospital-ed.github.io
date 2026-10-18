@@ -9,10 +9,10 @@
 //  minutes without use (no change running) or 5 minutes in the background
 //  drops it all and shows the gate again.
 // ============================================================================
-import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=3";
-import * as C from "./core.js?v=3";
-import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=3";
-import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=3";
+import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=5";
+import * as C from "./core.js?v=5";
+import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=5";
+import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=5";
 
 // The test build points every app at the local emulators by replacing the
 // next line (passwords/tests/make-site.mjs). Live it is always null.
@@ -21,8 +21,20 @@ const EMULATORS = null;
 const $ = (id) => document.getElementById(id);
 const DOTS = "•".repeat(10);
 const dotsHtml = `<span aria-hidden="true">${DOTS}</span><span class="pw-sr">hidden</span>`;
+// Show and Copy are icons with hover text (UX pass 2026-10-18); the word is
+// still in the button for screen readers (and the aria-label says which
+// password). Change stays a word.
+const svg = (body) => `<svg class="pw-ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+const ICON = {
+  show: svg('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  hide: svg('<path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
+  copy: svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
+  copied: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>')
+};
+// the inside of an icon button: the picture and the word (read out, not shown)
+const iconInner = (kind, word) => `${ICON[kind]}<span class="pw-sr">${word}</span>`;
 const ROW_INFO = {
-  leadership: "Physician Hiring for admins, Motion Voting settings and the Patient Hub statistics page.",
+  leadership: "Physician Hiring for admins, the Motion Voting Admin console and the Patient Hub statistics page.",
   ed: "Physician Hiring for the committee, and Motion Voting.",
   guest: "Physician Hiring, for applicants to book their times.",
 };
@@ -229,8 +241,8 @@ function rowHtml(r) {
       ${second ? `<p class="pw-status ${isPending ? "is-bad" : "is-quiet"}">${h(second)}</p>` : ""}
       <p class="pw-status is-quiet" id="copyNote-${r}" hidden></p>
       <div class="pw-actions">
-        <button type="button" class="ed-btn ed-btn-tinted" data-act="show" data-role="${r}" aria-label="Show the ${w} password">Show</button>
-        <button type="button" class="ed-btn ed-btn-tinted" data-act="copy" data-role="${r}" aria-label="Copy the ${w} password">Copy</button>
+        <button type="button" class="ed-btn ed-btn-tinted pw-icon-btn" data-act="show" data-role="${r}" aria-label="Show the ${w} password" title="Show the ${w} password">${iconInner("show", "Show")}</button>
+        <button type="button" class="ed-btn ed-btn-tinted pw-icon-btn" data-act="copy" data-role="${r}" aria-label="Copy the ${w} password" title="Copy the ${w} password">${iconInner("copy", "Copy")}</button>
         <button type="button" class="ed-btn ${diffFrom[r] && !isPending ? "ed-btn-filled" : "ed-btn-tinted"}" data-act="change" data-role="${r}"${changeOff ? " disabled" : ""}${changeLabel === "Change" ? ` aria-label="Change the ${w} password"` : ""}>${h(changeLabel)}</button>
         ${extra}
       </div>
@@ -242,8 +254,11 @@ function paintValue(r, on) {
   const el = $("val-" + r), b = document.querySelector(`#app button[data-act="show"][data-role="${r}"]`);
   if (!el || !b) return;
   const w = C.ROLE_WORD[r];
-  if (on && S && S.session) { el.textContent = S.session.content.roles[r]; b.textContent = "Hide"; b.setAttribute("aria-label", `Hide the ${w} password`); }
-  else { el.innerHTML = dotsHtml; b.textContent = "Show"; b.setAttribute("aria-label", `Show the ${w} password`); }
+  const label = (on && S && S.session ? "Hide" : "Show") + ` the ${w} password`;
+  if (on && S && S.session) { el.textContent = S.session.content.roles[r]; b.innerHTML = iconInner("hide", "Hide"); }
+  else { el.innerHTML = dotsHtml; b.innerHTML = iconInner("show", "Show"); }
+  b.setAttribute("aria-label", label);
+  b.title = label;
 }
 function showValue(r, on) {
   clearTimeout(shown[r]); delete shown[r];
@@ -267,8 +282,18 @@ async function copyValue(r, btn) {
   try {
     if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error("no clipboard");
     await navigator.clipboard.writeText(v);
-    btn.textContent = "Copied";
-    setTimeout(() => { if (btn.isConnected) btn.textContent = "Copy"; }, C.TIMING.copiedMs);
+    // Rebuilt from the role, never read back off the button: a second press
+    // within the "Copied" moment would otherwise keep "Copied" for good.
+    const again = `Copy the ${C.ROLE_WORD[r]} password`;
+    btn.innerHTML = iconInner("copied", "Copied");
+    btn.setAttribute("aria-label", "Copied");
+    btn.title = "Copied";
+    setTimeout(() => {
+      if (!btn.isConnected) return;
+      btn.innerHTML = iconInner("copy", "Copy");
+      btn.setAttribute("aria-label", again);
+      btn.title = again;
+    }, C.TIMING.copiedMs);
   } catch {
     // blocked: show it and select it, so it can be copied by hand
     showValue(r, true);
@@ -388,7 +413,7 @@ function stepNew(ctl, r, from, lead = "") {
   const warn = C.changeWarnings(r);
   ctl.step({ title: `New ${w} password`, html: `${msgLine}
       ${lead ? `<p class="pw-msg is-bad">${h(lead)}</p>` : ""}
-      ${field("pwNew", `New ${w} password`, { hint: C.TEXT.hint, key: "next" })}
+      ${field("pwNew", "New password", { hint: C.TEXT.hint, key: "next" })}
       ${field("pwRep", "Type it again")}
       ${warn.map((t) => `<p class="ed-hint">${h(t)}</p>`).join("")}
       <p class="ed-hint">${h(C.TEXT.keepOpen)}</p>`,
