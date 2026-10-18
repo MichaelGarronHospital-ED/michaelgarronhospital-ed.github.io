@@ -200,7 +200,7 @@ the Patient Hub statistics page always end up with the same three passwords.
 - **If a change stops part way** (a closed tab, a lost connection): open the page on any
   device and press **Finish the change**. It first shows what it sets the password to
   (hidden until Show), so a change nobody here started can be spotted. Nothing needs
-  typing, except in one case: a Admin change stopped before anything changed asks
+  typing, except in one case: an Admin change stopped before anything changed asks
   for the new Admin password again (**Go on**), or offers **Cancel this change**.
 - **Stuck with only Go on, and nobody knows the new Admin password:** the way out is
   the maintainer's `set-passwords.py --apply` (in the workspace), which sets all three
@@ -250,7 +250,7 @@ the Patient Hub statistics page always end up with the same three passwords.
   content policy, which help.
 - Anyone who can change this repo can change the page. Review every change to
   `passwords.html` and `passwords/` with care.
-- During a Admin change, someone who knows only the old Admin password can still
+- During an Admin change, someone who knows only the old Admin password can still
   read the saved copy for a while: from the start of the change until the page's own
   account has the new password, and for up to about an hour after (a sign-in stays valid
   that long). They could then try to guess the new Admin password offline. Choose a

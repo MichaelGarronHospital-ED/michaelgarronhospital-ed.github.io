@@ -79,7 +79,7 @@ for (const kind of H.browsersToRun()) {
       const requests = [];
       p.on("request", (r) => requests.push(r.url()));
       await p.goto(`${H.BASE}/live/passwords.html`);
-      await p.waitForFunction("window.__edReady === true");
+      await p.waitForFunction(() => window.__edReady === true);
       await p.waitForTimeout(500);
       assert.equal(await p.textContent("#gateLead"), TEXT.notReady);
       assert.equal(await p.isVisible("#gateForm"), false);

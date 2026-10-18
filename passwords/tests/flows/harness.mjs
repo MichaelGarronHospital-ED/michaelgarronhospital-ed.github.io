@@ -145,7 +145,9 @@ export async function newPage(browser, kind, { scheme = "light", clock = false }
   if (clock) await page.clock.install();
   page.__log = log; page.__ctx = ctx; page.__kind = kind; page.__scheme = scheme;
   await page.goto(`${BASE}/passwords.html`);
-  await page.waitForFunction("window.__edReady === true || window.__edFramed === true", null, { timeout: 20000 });
+  // A function, not a string: a string is re-run through eval on every retry, which the
+  // page's content policy blocks, so a slow first load used to fail (review 2026-10-18).
+  await page.waitForFunction(() => window.__edReady === true || window.__edFramed === true, null, { timeout: 20000 });
   return page;
 }
 export const closePage = async (p) => { try { await p.__ctx.close(); } catch { /* gone */ } };
