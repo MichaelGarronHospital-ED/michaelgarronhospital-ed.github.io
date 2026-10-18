@@ -23,7 +23,7 @@ test("README: the honest limits, iPhone, a stuck change, PR B", () => {
 test("README: setting it up lists every value to fill in, the Guest check, and the right commands", () => {
   for (const t of ["the `ADMIN_FIREBASE` values", "the uid on the `admin:leadership` line", "the same uid in place of `ADMIN_UID_NOT_SET`",
     "`role-accounts.json`", "remove \"(not created yet)\"", "bump every `?v=`",
-    "at least 10 characters, has no word \"password\" in it, and no space at either end",
+    "at least 6 characters, has no word \"password\" in it, and no space at either end",
     "From `passwords/`: `tests/node_modules/.bin/firebase deploy --only firestore:rules --project mgh-ed-admin`",
     "npx playwright-core install chromium webkit"]) has(t);
   assert.ok(!readme.includes("passwords/tests/node_modules/.bin/firebase deploy"), "the old, wrong path");

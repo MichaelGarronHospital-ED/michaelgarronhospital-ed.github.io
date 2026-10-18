@@ -36,8 +36,8 @@
 //  `store` is store.js (read, write); the tests pass a fake.
 // ============================================================================
 
-import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=1";
-import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=1";
+import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=2";
+import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=2";
 
 export const ROLES = Object.freeze(["leadership", "ed", "guest"]);
 export const ROLE_WORD = Object.freeze({ leadership: "Leadership", ed: "ED", guest: "Guest" });
@@ -92,7 +92,8 @@ export function validateNew(roles, current, next, overrides = {}) {
     const n = next[r] || {}, v = String(n.value || "");
     const w = ROLE_WORD[r];
     if (v !== String(n.repeat || "")) errors.push(`The two new ${w} passwords don't match.`);
-    if (v.length < 10) errors.push(`The new ${w} password needs at least 10 characters.`);
+    // 6 is Firebase's own minimum (it refuses shorter); Alvin 2026-10-18: no longer force 10
+    if (v.length < 6) errors.push(`The new ${w} password needs at least 6 characters.`);
     if (v !== v.trim()) errors.push(`The new ${w} password can't start or end with a space.`);
     if (v.toLowerCase().includes("password")) errors.push(`The new ${w} password can't contain the word "password".`);
     if (v && v === current[r]) errors.push(`The new ${w} password is the same as the current one.`);
@@ -848,7 +849,7 @@ export const TEXT = Object.freeze({
   refusedDoc: "The saved copy can't be opened. Type the ED and Guest passwords in use now to make a new copy.",
   changedElsewhere: "This was just changed on another device. Here is the latest.",
   signedOut: "You were signed out, probably because a password changed.",
-  hint: "At least 10 characters. Three or four words are easy to say and hard to guess. Not a password in use now anywhere.",
+  hint: "At least 6 characters. Three or four words are easy to say and hard to guess. Not a password in use now anywhere.",
   keepOpen: "Keep this page open until it says Done.",
   tellPeople: "Tell people in person or by phone. Never email a password.",
   typedWrong: "That didn't work either. Check it was typed right.",

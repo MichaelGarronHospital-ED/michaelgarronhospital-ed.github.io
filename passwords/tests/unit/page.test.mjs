@@ -28,9 +28,9 @@ test("no inline script, no inline style, no inline handler", () => {
 
 test("boot.js runs first as a classic script, then the module; the shared look before the page's own", () => {
   const scripts = [...html.matchAll(/<script ([^>]*)><\/script>/g)].map((m) => m[1]);
-  assert.deepEqual(scripts, ['src="passwords/boot.js?v=1"', 'type="module" src="passwords/app.js?v=1"']);
+  assert.deepEqual(scripts, ['src="passwords/boot.js?v=2"', 'type="module" src="passwords/app.js?v=2"']);
   const css = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(css, ["shared/ed-ui.css?v=1", "passwords/styles.css?v=1"]);
+  assert.deepEqual(css, ["shared/ed-ui.css?v=2", "passwords/styles.css?v=2"]);
 });
 
 test("the page is not linked from the dashboard yet (PR B adds the gear link)", () => {

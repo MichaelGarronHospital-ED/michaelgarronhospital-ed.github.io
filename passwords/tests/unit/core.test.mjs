@@ -45,7 +45,7 @@ test("validation (hiring's rules, one role at a time)", () => {
   assert.deepEqual(validateNew(["ed"], CUR, { ed: NEXTV.ed }), []);
   assert.ok(validateNew([], CUR, {}).includes("Pick a password to change."));
   assert.ok(validateNew(["ed"], CUR, { ed: { value: NEXT.ed, repeat: "nope" } })[0].includes("don't match"));
-  assert.ok(validateNew(["ed"], CUR, { ed: { value: "short", repeat: "short" } }).some((e) => e.includes("at least 10")));
+  assert.ok(validateNew(["ed"], CUR, { ed: { value: "short", repeat: "short" } }).some((e) => e.includes("at least 6")));
   assert.ok(validateNew(["ed"], CUR, { ed: { value: " leading-space", repeat: " leading-space" } }).some((e) => e.includes("space")));
   assert.ok(validateNew(["ed"], CUR, { ed: { value: "MyPassword12", repeat: "MyPassword12" } }).some((e) => e.includes('"password"')));
   assert.ok(validateNew(["ed"], CUR, { ed: { value: CUR.ed, repeat: CUR.ed } }).some((e) => e.includes("same as the current")));
@@ -733,4 +733,12 @@ test("words: the Done message has no password and the warnings follow hiring", (
   assert.equal(doneText("guest").works, "The new Guest password works in Physician Hiring.");
   assert.equal(differText("leadership", {}), "The ED tools passwords page, Motion Voting and Physician Hiring have different Leadership passwords. Set one new Leadership password for all of them now.");
   assert.equal(sameAsText("ed", "leadership"), "That is the same as the Leadership password, so Motion Voting and Physician Hiring can't tell them apart. Set a new ED password now.");
+});
+
+test("a 6 to 9 character new password is allowed (Alvin 2026-10-18: no 10-character rule)", () => {
+  for (const v of ["sixchr", "ninechars"]) {
+    const errs = validateNew(["guest"], CUR, { guest: { value: v, repeat: v } });
+    assert.ok(!errs.some((e) => e.includes("at least")), v + ": " + errs.join(" | "));
+  }
+  assert.ok(validateNew(["guest"], CUR, { guest: { value: "five5", repeat: "five5" } }).some((e) => e.includes("at least 6")));
 });
