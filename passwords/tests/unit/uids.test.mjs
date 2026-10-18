@@ -51,3 +51,12 @@ test("ADMIN_FIREBASE is the first object in config.js, found by the workspace pa
   }
   assert.equal(ADMIN_FIREBASE.projectId, "mgh-ed-admin");
 });
+
+// round 1 D-M1: once the admin account exists, the workspace file lists it too
+test("the admin uid equals role-accounts.json's admin uid, when that file has one", { skip: !existsSync(ws) && "role-accounts.json is not next to the repo" }, (t) => {
+  const j = JSON.parse(readFileSync(ws, "utf8"));
+  const entry = (j.accounts || []).find((a) => a.key === "admin:leadership" || a.key === "admin") || j.admin || null;
+  if (!entry || !entry.uid) { t.skip("role-accounts.json has no admin uid yet"); return; }
+  assert.equal(ACCOUNTS.find((a) => a.key === "admin:leadership").uid, entry.uid);
+});
+

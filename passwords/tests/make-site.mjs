@@ -36,6 +36,39 @@ function copy(rel) {
 const write = (rel, text) => { const to = path.join(SITE, rel); fs.mkdirSync(path.dirname(to), { recursive: true }); fs.writeFileSync(to, text); };
 const read = (rel) => fs.readFileSync(path.join(REPO, rel), "utf8");
 
+// ---- the edits, by pattern (they work before and after the real values are
+// filled in: round 1 D-M1). Each throws unless it changed exactly what it should.
+const block = (text, name) => {
+  const m = text.match(new RegExp(`export const ${name} = \\{[^}]*\\}`));
+  if (!m) throw new Error(`make-site: no ${name} block`);
+  return m[0];
+};
+function inBlock(text, name, edit) {
+  const b = block(text, name);
+  const e = edit(b);
+  if (e === b) throw new Error(`make-site: nothing changed in ${name}`);
+  return text.replace(b, e);
+}
+const adminLine = /(\{ key: "admin:leadership",[^\n]*uid: )"[^"]*"/;
+export function testConfig(cfg) {
+  cfg = inBlock(cfg, "ADMIN_FIREBASE", (b) => b.replace(/apiKey: "[^"]*"/, 'apiKey: "demo-admin-key"').replace(/appId: "[^"]*"/, 'appId: "demo-admin-app"')
+    .replace(/projectId: "[^"]*"/, `projectId: "${PROJECT}"`));
+  for (const name of ["HIRING_FIREBASE", "VOTING_FIREBASE"])
+    cfg = inBlock(cfg, name, (b) => b.replace(/apiKey: "[^"]*"/, 'apiKey: "demo-tool-key"').replace(/projectId: "[^"]*"/, `projectId: "${PROJECT}"`));
+  if (!adminLine.test(cfg)) throw new Error("make-site: no admin:leadership line");
+  return cfg.replace(adminLine, `$1"${TEST_UID}"`);
+}
+export function blankAdminUid(cfg) {
+  if (!adminLine.test(cfg)) throw new Error("make-site: no admin:leadership line");
+  return cfg.replace(adminLine, '$1""');
+}
+const rulesUid = /request\.auth\.uid == '[^']*'/g;
+export function testRules(rules) {
+  const n = (rules.match(rulesUid) || []).length;
+  if (n !== 1) throw new Error(`make-site: expected one uid in the rules, found ${n}`);
+  return rules.replace(rulesUid, `request.auth.uid == '${TEST_UID}'`);
+}
+
 export function makeSite() {
   fs.rmSync(SITE, { recursive: true, force: true });
   copy("shared/ed-ui.css");
@@ -56,27 +89,18 @@ export function makeSite() {
   write("passwords/app.js", app);
 
   // the configs: demo project, invented keys, the test admin uid
-  let cfg = read("passwords/config.js");
-  cfg = replaceOnce(cfg, 'apiKey: "NOT-CREATED-YET"', 'apiKey: "demo-admin-key"', "admin apiKey");
-  cfg = replaceOnce(cfg, 'appId: "NOT-CREATED-YET"', 'appId: "demo-admin-app"', "admin appId");
-  cfg = replaceOnce(cfg, 'projectId: "mgh-ed-admin"', `projectId: "${PROJECT}"`, "admin projectId");
-  cfg = replaceOnce(cfg, 'projectId: "mgh-ed-hiring"', `projectId: "${PROJECT}"`, "hiring projectId");
-  cfg = replaceOnce(cfg, 'projectId: "ed-motion-voting-99b96"', `projectId: "${PROJECT}"`, "voting projectId");
-  cfg = cfg.replace(/apiKey: "AIza[^"]+"/g, 'apiKey: "demo-tool-key"');
-  cfg = replaceOnce(cfg, 'email: "leadership@mgh-ed-admin.invalid", uid: ""', `email: "leadership@mgh-ed-admin.invalid", uid: "${TEST_UID}"`, "admin uid");
-  cfg += `\n// ${MARKER}\n`;
-  write("passwords/config.js", cfg);
+  write("passwords/config.js", testConfig(read("passwords/config.js")) + `\n// ${MARKER}\n`);
 
   // the rules with the test uid
-  let rules = read("passwords/firestore.rules");
-  rules = replaceOnce(rules, "'ADMIN_UID_NOT_SET'", `'${TEST_UID}'`, "rules uid");
-  write("passwords/firestore.rules", `// ${MARKER}\n${rules}`);
+  write("passwords/firestore.rules", `// ${MARKER}\n${testRules(read("passwords/firestore.rules"))}`);
 
-  // the page exactly as it is in the repo (not set up yet: it must not sign in)
+  // the page as in the repo, with the admin uid blanked: "not set up yet" stays
+  // testable after the real values are filled in (it must not sign in)
   for (const rel of ["passwords.html", "shared/ed-ui.css", "icons/favicon.svg", ...fs.readdirSync(path.join(REPO, "passwords")).filter((f) => /\.(js|css)$/.test(f)).map((f) => `passwords/${f}`)]) {
     const to = path.join(SITE, "live", rel);
     fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.copyFileSync(path.join(REPO, rel), to);
+    if (rel === "passwords/config.js") fs.writeFileSync(to, blankAdminUid(read(rel)));
+    else fs.copyFileSync(path.join(REPO, rel), to);
   }
 
   // a page that puts the passwords page in a frame (it must refuse)

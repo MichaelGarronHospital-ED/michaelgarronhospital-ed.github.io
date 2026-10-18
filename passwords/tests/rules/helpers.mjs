@@ -3,16 +3,14 @@
 // emulator runs as project demo-mgh-ed-admin: a demo- project never talks
 // to a real one.
 import { readFileSync } from "node:fs";
+import { testRules } from "../make-site.mjs";
 
 export const PROJECT = "demo-mgh-ed-admin";
-export const TEST_UID = "TestAdminUid000000000000001";
+export { TEST_UID } from "../make-site.mjs";
 export const ADMIN_EMAIL = "leadership@mgh-ed-admin.invalid";
 const [host, port] = (process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8086").split(":");
 export const EMU = { host, port: Number(port) };
-export const rulesForTest = () => {
-  const src = readFileSync(new URL("../../firestore.rules", import.meta.url), "utf8");
-  if (!src.includes("'ADMIN_UID_NOT_SET'")) throw new Error("the rules have no placeholder to replace");
-  return src.replace("'ADMIN_UID_NOT_SET'", `'${TEST_UID}'`);
-};
+// by pattern: works with the placeholder and with the real uid (round 1 D-M1)
+export const rulesForTest = () => testRules(readFileSync(new URL("../../firestore.rules", import.meta.url), "utf8"));
 // a password sign-in with this email (token options for authenticatedContext)
 export const pw = (email) => ({ email, firebase: { sign_in_provider: "password" } });
