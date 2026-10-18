@@ -1,0 +1,80 @@
+/* The ED tools passwords page: layout only. Colours, type and shapes come
+ * from shared/ed-ui.css (loaded first, unchanged); this file uses only its
+ * --ed-* tokens. Phone first: 390 px wide with no sideways scroll, 44 px
+ * buttons, fields of 16 px text or more. No em dashes in this file. */
+
+[hidden] { display: none !important; }
+body.ed-page { margin: 0; min-height: 100vh; }
+a { color: var(--ed-accent-ink); }
+a:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--ed-ring); }
+
+.pw-wrap { max-width: var(--ed-maxw-narrow); margin: 0 auto; padding: 24px var(--ed-gutter) 48px; box-sizing: border-box; }
+.pw-top { max-width: var(--ed-maxw-narrow); margin: 0 auto; padding: 20px var(--ed-gutter) 0; box-sizing: border-box; display: flex; align-items: center; gap: 12px; }
+.pw-h1 { font: 700 var(--ed-h2)/1.2 var(--ed-font-display); margin: 0; flex: 1; min-width: 0; }
+.pw-top .ed-btn-plain { flex: none; }
+
+.pw-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* the gate (hiring's look: a centred card with the badge) */
+.pw-gate { max-width: 420px; margin: 8vh auto 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pw-gate .pw-h1 { flex: none; font-size: var(--ed-title); }
+.pw-gate p { margin: 0; }
+.pw-gate-badge { width: 48px; height: 48px; border-radius: 12px; font-size: 18px; }
+.pw-gate-form { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.pw-gate-form .ed-btn { width: 100%; }
+.pw-framed { font: 600 var(--ed-h3)/1.3 var(--ed-font); text-align: center; margin: 20vh 0 0; }
+
+/* messages: always at the top of their step */
+.pw-msg { margin: 0; font: 400 var(--ed-text-sm)/1.45 var(--ed-font); color: var(--ed-red); text-align: left; }
+.pw-msg:empty { display: none; }
+.pw-msg.is-busy { color: var(--ed-ink-2); }
+.pw-msg.is-good { color: var(--ed-green); }
+.pw-lead { margin: 0 0 12px; }
+
+/* main view */
+.pw-intro { margin: 16px 0 20px; color: var(--ed-ink-2); }
+.pw-page-msg { margin: 0 0 16px; }
+.pw-rows > li.pw-row { flex-direction: column; align-items: stretch; gap: 6px; padding: 16px; }
+.pw-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.pw-name { font: 600 var(--ed-h3)/1.25 var(--ed-font-display); margin: 0; min-width: 7.5em; }
+.pw-value { font: 500 var(--ed-text)/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; overflow-wrap: anywhere; word-break: break-all; min-width: 0; }
+.pw-row .ed-hint { margin: 0; }
+.pw-status { margin: 4px 0 0; font: 400 var(--ed-text-sm)/1.45 var(--ed-font); }
+.pw-status.is-bad { color: var(--ed-red); }
+.pw-status.is-warn { color: var(--ed-amber); }
+.pw-status.is-quiet { color: var(--ed-ink-2); }
+.pw-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.pw-actions .ed-btn { padding: 0 16px; }
+.pw-foot { margin: 24px 0 0; }
+
+/* first use */
+.pw-card-title { font: 600 var(--ed-h3)/1.25 var(--ed-font-display); margin: 0 0 8px; }
+.pw-form { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.pw-form > .ed-btn { align-self: flex-start; }
+
+/* a password field with its Show button */
+.pw-field { display: flex; gap: 8px; align-items: stretch; }
+.pw-field .ed-field { flex: 1; min-width: 0; }
+.pw-field .ed-btn { flex: none; padding: 0 14px; }
+.ed-field[aria-invalid="true"] { border-color: var(--ed-red); }
+
+/* the dialog */
+.pw-overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto;
+  padding: 16px var(--ed-gutter); box-sizing: border-box; background: var(--ed-bg); background: color-mix(in srgb, var(--ed-bg) 85%, transparent); }
+.pw-sheet { width: 100%; max-width: 560px; box-sizing: border-box; box-shadow: var(--ed-shadow-lg); margin: 4vh 0; }
+.pw-sheet-title { font: 600 var(--ed-h2)/1.25 var(--ed-font-display); margin: 0 0 12px; }
+.pw-sheet-title:focus { outline: none; }
+#flowBody { display: flex; flex-direction: column; gap: 12px; }
+#flowBody p { margin: 0; }
+#flowBody .ed-label { gap: 6px; }
+.pw-btns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.pw-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pw-steps .is-done { color: var(--ed-green); }
+.pw-steps .is-now { color: var(--ed-ink); font-weight: 600; }
+.pw-steps .is-wait { color: var(--ed-ink-2); }
+.pw-note { min-height: 5em; resize: vertical; }
+
+@media (max-width: 420px) {
+  .pw-btns { justify-content: stretch; }
+  .pw-btns .ed-btn { flex: 1 1 auto; }
+}
