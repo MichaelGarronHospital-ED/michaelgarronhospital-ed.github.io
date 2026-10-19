@@ -6,7 +6,7 @@
 [hidden] { display: none !important; }
 body.ed-page { margin: 0; min-height: 100vh; }
 a { color: var(--ed-accent-ink); }
-a:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--ed-ring); }
+a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid transparent; box-shadow: var(--ed-ring); }
 
 .pw-wrap { max-width: var(--ed-maxw-narrow); margin: 0 auto; padding: 24px var(--ed-gutter) 48px; box-sizing: border-box; }
 .pw-top { max-width: var(--ed-maxw-narrow); margin: 0 auto; padding: 20px var(--ed-gutter) 0; box-sizing: border-box; display: flex; align-items: center; gap: 12px; }
