@@ -3,8 +3,9 @@
 //  the local emulators over REST, and browsers driven by playwright-core.
 //  Only ever 127.0.0.1 and the demo project: nothing here can reach a real
 //  Firebase project. The Firebase SDK files are fetched from gstatic once and
-//  kept in passwords/tests/site-cache/ (git-ignored), so a run is quick and the
-//  page still loads them from their real address.
+//  kept in passwords/tests/site-cache/<version>/ (git-ignored), so a run is quick
+//  and the page still loads them from their real address. The version comes from
+//  store.js's SDK_BASE, so changing it there fetches the new files by itself.
 // ============================================================================
 import http from "node:http";
 import fs from "node:fs";
@@ -12,12 +13,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, webkit, devices } from "playwright-core";
 import { makeLock, seal, openVault } from "../../vault.js";
+import { SDK_BASE } from "../../store.js";
 import { ACCOUNTS } from "../../config.js";
 import { makeSite, PROJECT, TEST_UID } from "../make-site.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TESTS = path.resolve(HERE, "..");
-const CACHE = path.join(TESTS, "site-cache");
+const CACHE = path.join(TESTS, "site-cache", SDK_BASE.split("/").filter(Boolean).pop());
 export const PORT = Number(process.env.PASSWORDS_TEST_PORT || 8097);
 export const BASE = `http://127.0.0.1:${PORT}`;
 export const AUTH = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9096"}`;
@@ -133,7 +135,7 @@ export async function newPage(browser, kind, { scheme = "light", clock = false }
   page.on("pageerror", (e) => log.errors.push(String(e && e.message)));
   await ctx.route("**/*", async (route) => {
     const req = route.request(), url = req.url();
-    if (url.startsWith("https://www.gstatic.com/firebasejs/10.12.2/")) return route.fulfill({ status: 200, contentType: "text/javascript", body: await sdkFile(url) });
+    if (url.startsWith(SDK_BASE)) return route.fulfill({ status: 200, contentType: "text/javascript", body: await sdkFile(url) });
     if (url.startsWith(BASE) || url.startsWith(FS) || url.startsWith(AUTH)) {
       if (url.startsWith(AUTH) && url.includes("identitytoolkit")) log.auth.push(authCall(url, req.postData()));
       if (page.__intercept) { const done = await page.__intercept(route, req); if (done) return; }

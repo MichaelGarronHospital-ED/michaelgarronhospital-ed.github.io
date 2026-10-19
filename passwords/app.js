@@ -9,10 +9,10 @@
 //  minutes without use (no change running) or 5 minutes in the background
 //  drops it all and shows the gate again.
 // ============================================================================
-import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=5";
-import * as C from "./core.js?v=5";
-import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=5";
-import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=5";
+import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=6";
+import * as C from "./core.js?v=6";
+import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=6";
+import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=6";
 
 // The test build points every app at the local emulators by replacing the
 // next line (passwords/tests/make-site.mjs). Live it is always null.

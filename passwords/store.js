@@ -14,7 +14,7 @@
 //  password: everything in the document is already encrypted.
 // ============================================================================
 
-export const SDK_BASE = "https://www.gstatic.com/firebasejs/10.12.2/";
+export const SDK_BASE = "https://www.gstatic.com/firebasejs/12.19.0/";
 export const VAULT_COLLECTION = "vault";
 export const VAULT_ID = "main";
 

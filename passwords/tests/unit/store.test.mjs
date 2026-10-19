@@ -39,12 +39,12 @@ test("a write that is not gen + 1 or not version 1 is refused by the store itsel
   assert.equal(mem.data, null);
 });
 
-test("the page loads firestore-lite 10.12.2 from gstatic", async () => {
+test("the page loads firestore-lite 12.19.0 from gstatic", async () => {
   const asked = [];
   const f = { getFirestore: (app) => ({ app }), doc() {}, getDoc() {}, runTransaction() {}, serverTimestamp() {} };
   const r = await firestoreLite("APP", { importer: async (u) => { asked.push(u); return f; } });
-  assert.deepEqual(asked, ["https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-lite.js"]);
-  assert.equal(SDK_BASE, "https://www.gstatic.com/firebasejs/10.12.2/");
+  assert.deepEqual(asked, ["https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-lite.js"]);
+  assert.equal(SDK_BASE, "https://www.gstatic.com/firebasejs/12.19.0/");
   assert.deepEqual(r.db, { app: "APP" });
   assert.deepEqual(Object.keys(r.fs).sort(), ["doc", "getDoc", "runTransaction", "serverTimestamp"]);
 });

@@ -37,8 +37,8 @@
 //  `store` is store.js (read, write); the tests pass a fake.
 // ============================================================================
 
-import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=5";
-import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=5";
+import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=6";
+import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=6";
 
 export const ROLES = Object.freeze(["leadership", "ed", "guest"]);
 export const ROLE_WORD = Object.freeze({ leadership: "Admin", ed: "ED", guest: "Guest" });
