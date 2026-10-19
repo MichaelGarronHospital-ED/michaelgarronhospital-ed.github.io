@@ -9,10 +9,10 @@
 //  minutes without use (no change running) or 5 minutes in the background
 //  drops it all and shows the gate again.
 // ============================================================================
-import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=6";
-import * as C from "./core.js?v=6";
-import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=6";
-import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=6";
+import { CONFIGS, ADMIN_FIREBASE } from "./config.js?v=7";
+import * as C from "./core.js?v=7";
+import { makeStore, firestoreLite, SDK_BASE } from "./store.js?v=7";
+import { escapeHtml as h, ss, ls, flowDialog, isTouch, announce, enterMovesOn } from "./util.js?v=7";
 
 // The test build points every app at the local emulators by replacing the
 // next line (passwords/tests/make-site.mjs). Live it is always null.
@@ -147,6 +147,16 @@ async function signOut(reason) {
   ss.set(OUT_KEY, reason);
   if (FB) { try { await Promise.race([FB.sdk.signOut(FB.auth), new Promise((r) => setTimeout(r, 2000))]); } catch { /* local anyway */ } }
   location.reload();
+}
+// The Log out button (the ED tools' Log out standard, 2026-10-19): it says
+// "Logging out…" and can't be pressed again while it works. Nothing can be
+// lost here: a change runs only inside its dialog, which makes the header
+// inert, so Log out can't be pressed then (and `running` is checked too).
+function onLogout() {
+  const b = $("logout");
+  if (running || leaving || b.disabled) return;
+  b.disabled = true; b.textContent = "Logging out…";
+  signOut("logout");
 }
 
 // ------------------------------------------------------------------ idle and hidden
@@ -754,7 +764,7 @@ function boot() {
     if (!isTouch()) $("gpw").focus();
     gateCountdown();
   }
-  $("logout").addEventListener("click", () => signOut("logout"));
+  $("logout").addEventListener("click", onLogout);
   $("app").addEventListener("click", onAppClick);
   watchUse();
   window.__edReady = true;
