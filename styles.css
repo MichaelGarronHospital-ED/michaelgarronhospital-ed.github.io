@@ -28,6 +28,16 @@ body { margin: 0; }
   margin: 0 0 16px;
   font-size: var(--ed-text-sm); font-weight: 600; line-height: 1.3; color: var(--ed-ink-2);
 }
+/* The hospital logo (2026-10-19, Alvin), inline so its grey lettering can follow the
+   theme: the logo's own #404041 in light, the page ink in dark (the greens stay). Same
+   artwork as Patient Hub's assets/images/mgh-logo.svg. A thin rule sets the department
+   apart from it. */
+.brand-logo { flex: none; display: block; width: auto; height: 48px; color: #404041; }
+.brand-dept { padding-left: 10px; border-left: 1px solid var(--ed-line); }
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-logo { color: var(--ed-ink); }
+}
+@media screen { :root[data-theme="dark"] .brand-logo { color: var(--ed-ink); } }
 /* The light/dark switch (theme.js; shown only once that script runs) and the gear,
    side by side at the right. */
 .settings-link, .theme-toggle {
@@ -215,11 +225,11 @@ body { margin: 0; }
   .wrap { padding-top: 28px; }
   .head { margin-bottom: 28px; }
 }
-/* The narrowest phones (320px): the hospital name cannot share a line with the two
-   buttons, so it drops to its own line under the badge and buttons. */
+/* The narrowest phones (320px): "Emergency Department" cannot share a line with the logo
+   and the two buttons, so it drops to its own line under them, without its rule. */
 @media (max-width: 359px) {
   .brand:has(> .theme-toggle:not([hidden])) { flex-wrap: wrap; row-gap: 4px; }
-  .brand:has(> .theme-toggle:not([hidden])) > span:nth-child(2) { order: 3; flex-basis: 100%; }
+  .brand:has(> .theme-toggle:not([hidden])) > span:nth-child(2) { order: 3; flex-basis: 100%; padding-left: 0; border-left: 0; }
 }
 
 /* ---- print: always light (tokens switch in ed-ui.css), no hover or chevrons -- */
