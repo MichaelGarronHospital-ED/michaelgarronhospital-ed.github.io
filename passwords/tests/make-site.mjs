@@ -72,6 +72,8 @@ export function testRules(rules) {
 export function makeSite() {
   fs.rmSync(SITE, { recursive: true, force: true });
   copy("shared/ed-ui.css");
+  copy("theme.css");
+  copy("theme.js");
   copy("icons/favicon.svg");
   for (const f of fs.readdirSync(path.join(REPO, "passwords")))
     if (/\.(js|css)$/.test(f)) copy(path.join("passwords", f));
@@ -96,7 +98,7 @@ export function makeSite() {
 
   // the page as in the repo, with the admin uid blanked: "not set up yet" stays
   // testable after the real values are filled in (it must not sign in)
-  for (const rel of ["passwords.html", "shared/ed-ui.css", "icons/favicon.svg", ...fs.readdirSync(path.join(REPO, "passwords")).filter((f) => /\.(js|css)$/.test(f)).map((f) => `passwords/${f}`)]) {
+  for (const rel of ["passwords.html", "shared/ed-ui.css", "theme.css", "theme.js", "icons/favicon.svg", ...fs.readdirSync(path.join(REPO, "passwords")).filter((f) => /\.(js|css)$/.test(f)).map((f) => `passwords/${f}`)]) {
     const to = path.join(SITE, "live", rel);
     fs.mkdirSync(path.dirname(to), { recursive: true });
     if (rel === "passwords/config.js") fs.writeFileSync(to, blankAdminUid(read(rel)));

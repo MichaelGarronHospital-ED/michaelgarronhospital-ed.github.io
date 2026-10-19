@@ -937,6 +937,135 @@ for _name in _wanted:
     globals()[_cls.__name__] = _cls
 del _cls, _name
 
+
+BG = {"light": "rgb(245, 245, 247)", "dark": "rgb(0, 0, 0)"}       # --ed-bg
+BAR = {"light": "#f5f5f7", "dark": "#000000"}                      # theme-color
+LOOK = """() => ({ attr: document.documentElement.getAttribute('data-theme'),
+  bg: getComputedStyle(document.body).backgroundColor,
+  pressed: document.querySelector('.theme-toggle').getAttribute('aria-pressed'),
+  title: document.querySelector('.theme-toggle').title,
+  shown: getComputedStyle(document.querySelector('.theme-toggle')).display !== 'none',
+  bars: [...document.querySelectorAll('meta[name=theme-color]')].map(m => m.content),
+  saved: (() => { try { return localStorage.getItem('ed_theme'); } catch (e) { return 'blocked'; } })() })"""
+
+
+class ThemeSwitch:
+    """The light/dark switch beside the gear (theme.js, theme.css)."""
+    BROWSER = "chromium"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pw = sync_playwright().start()
+        cls.browser = getattr(cls.pw, cls.BROWSER).launch()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close()
+        cls.pw.stop()
+
+    def test_switch_flips_remembers_and_goes_back_to_the_device(self):
+        for device, other in (("light", "dark"), ("dark", "light")):
+            with self.subTest(device=device):
+                h = Harness(self, self.browser, color_scheme=device)
+                page = h.open()
+                s = page.evaluate(LOOK)
+                self.assertEqual((s["attr"], s["bg"], s["saved"]), (None, BG[device], None))
+                self.assertTrue(s["shown"])
+                self.assertEqual(s["pressed"], "true" if device == "dark" else "false")
+                self.assertEqual(s["title"], "Switch to %s mode" % other)
+                page.click(".theme-toggle")
+                s = page.evaluate(LOOK)
+                self.assertEqual((s["attr"], s["bg"], s["saved"]), (other, BG[other], other))
+                self.assertEqual(s["pressed"], "true" if other == "dark" else "false")
+                self.assertEqual(s["title"], "Switch to %s mode" % device)
+                self.assertEqual(s["bars"], [BAR[other], BAR[other]])
+                page.reload()
+                page.wait_for_selector("#tools .card")
+                s = page.evaluate(LOOK)
+                self.assertEqual((s["attr"], s["bg"]), (other, BG[other]), "the choice is remembered")
+                page.click(".theme-toggle")
+                s = page.evaluate(LOOK)
+                self.assertEqual((s["attr"], s["bg"], s["saved"]), (None, BG[device], None),
+                                 "picking the device's own look follows the device again")
+                self.assertEqual(s["bars"], ["#f5f5f7", "#000000"])
+                h.assert_clean()
+                h.close()
+
+    def test_choice_stays_when_the_device_changes(self):
+        h = Harness(self, self.browser, color_scheme="light")
+        page = h.open()
+        page.click(".theme-toggle")
+        self.assertEqual(page.evaluate(LOOK)["saved"], "dark")
+        page.emulate_media(color_scheme="dark")      # sunset: the device turns dark too
+        page.wait_for_timeout(50)
+        s = page.evaluate(LOOK)
+        self.assertEqual((s["attr"], s["bg"], s["saved"], s["pressed"]), ("dark", BG["dark"], "dark", "true"))
+        page.emulate_media(color_scheme="light")     # sunrise: the person's choice still holds
+        page.wait_for_timeout(50)
+        s = page.evaluate(LOOK)
+        self.assertEqual((s["attr"], s["bg"], s["saved"]), ("dark", BG["dark"], "dark"), "the choice is kept")
+        page.reload()
+        page.wait_for_selector("#tools .card")
+        self.assertEqual(page.evaluate(LOOK)["bg"], BG["dark"])
+        h.assert_clean()
+
+    def test_storage_blocked_still_switches(self):
+        h = Harness(self, self.browser, color_scheme="light")
+        h.ctx.add_init_script("Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); } });")
+        page = h.open()
+        page.click(".theme-toggle")
+        s = page.evaluate(LOOK)
+        self.assertEqual((s["attr"], s["bg"], s["saved"]), ("dark", BG["dark"], "blocked"))
+        page.click(".theme-toggle")
+        self.assertEqual(page.evaluate(LOOK)["bg"], BG["light"])
+        h.assert_clean()
+
+    def test_hidden_without_javascript(self):
+        h = Harness(self, self.browser, js=False)
+        page = h.open(wait_tiles=False)
+        self.assertFalse(page.locator(".theme-toggle").is_visible())
+        self.assertTrue(page.locator(".settings-link").is_visible())
+        h.close()
+
+    def test_phone_header_fits(self):
+        for width in (320, 375):
+            with self.subTest(width=width):
+                h = Harness(self, self.browser, viewport=(width, 800))
+                page = h.open()
+                r = page.evaluate("""() => {
+                  const b = document.querySelector('.theme-toggle').getBoundingClientRect();
+                  const g = document.querySelector('.settings-link').getBoundingClientRect();
+                  const doc = document.documentElement;
+                  return { scroll: doc.scrollWidth - doc.clientWidth, bw: b.width, bh: b.height,
+                           gap: g.left - b.right, sameRow: Math.abs(b.top - g.top) < 1 }; }""")
+                self.assertLessEqual(r["scroll"], 0)
+                self.assertGreaterEqual(min(r["bw"], r["bh"]), 44)
+                self.assertGreaterEqual(r["gap"], 0)
+                self.assertTrue(r["sameRow"])
+                h.close()
+
+    def test_passwords_and_404_pages_follow_the_choice(self):
+        h = Harness(self, self.browser, color_scheme="light")
+        page = h.open()
+        page.click(".theme-toggle")
+        for path in ("/passwords.html", "/no-such-page"):
+            with self.subTest(path=path):
+                body = (REPO / ("passwords.html" if path == "/passwords.html" else "404.html")).read_bytes()
+
+                def serve(route, request=None, body=body):
+                    route.fulfill(status=200, body=body, headers={"content-type": TYPES[".html"]})
+                h.ctx.route(SITE + path, serve)
+                page.goto(SITE + path, wait_until="domcontentloaded")
+                self.assertEqual(page.evaluate("document.documentElement.getAttribute('data-theme')"), "dark")
+                self.assertEqual(page.evaluate("getComputedStyle(document.body).backgroundColor"), BG["dark"])
+        h.close()
+
+
+for _name in _wanted:
+    _cls = type("TestTheme" + _name.capitalize(), (ThemeSwitch, unittest.TestCase), {"BROWSER": _name})
+    globals()[_cls.__name__] = _cls
+del _cls, _name
+
 class GearLink(unittest.TestCase):
     """Design B.7.2 (PR B): the gear opens the ED tools passwords page in this repo."""
 

@@ -33,6 +33,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
 | `index.html` | Page layout, heading and footer (owner and "Report a problem"). Also holds a plain list of every link, which shows when JavaScript is off or the tool list cannot be loaded. **That list is written for you** from `tools.json` by `scripts/check_tools.py`; never edit it by hand. |
 | `app.js` | Reads `tools.json` and builds the tiles. Also shows notes and "Not loading right now" on tiles (see "Status on tiles"). |
 | `shared/ed-ui.css` | The shared look for every ED staff tool (colours, font, buttons, lists; light and dark follow the device). This repo holds the master copy; the other tools keep exact copies. Do not edit it here only: see its header. |
+| `theme.js`, `theme.css` | The light and dark switch beside the gear. Pages follow the device until someone presses it; the choice is kept on that browser (front page, passwords page and "page not found" page). `theme.css` repeats the shared look's colours; a test keeps them equal. |
 | `styles.css` | This page's own layout, built on the shared look. |
 | `404.html` | Shown for any mistyped or dead address on this domain, with a button back to the dashboard and a "Report a broken link" email link. |
 | `icons/` | One SVG icon per tool, the favicon, and `apple-touch-icon.png` (the icon when someone adds the dashboard to their phone's home screen; also the link-preview image). |

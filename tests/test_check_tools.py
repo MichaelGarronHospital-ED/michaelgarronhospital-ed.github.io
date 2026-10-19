@@ -597,5 +597,49 @@ class TestWorkflow(unittest.TestCase):
         self.assertTrue(lines[-1] == "exit 0" or lines[-2] == "exit 0")
 
 
+class ThemeTokens(unittest.TestCase):
+    """theme.css (the light/dark switch beside the gear) repeats ed-ui.css's colours: its
+    light block is ed-ui.css's :root values for every token the dark block changes, its dark
+    block is ed-ui.css's dark block. Here so CI runs it (check.yml runs only this file)."""
+
+    @staticmethod
+    def tokens(block):
+        return dict(re.findall(r"(--ed-[\w-]+)\s*:\s*([^;]+);", block))
+
+    @staticmethod
+    def body(css, start):
+        """The text inside the braces that follow `start` (nested braces allowed)."""
+        i = css.index("{", css.index(start)) + 1
+        depth, j = 1, i
+        while depth:
+            depth += {"{": 1, "}": -1}.get(css[j], 0)
+            j += 1
+        return css[i:j - 1]
+
+    def test_theme_css_matches_ed_ui_css(self):
+        shared = (REPO / "shared" / "ed-ui.css").read_text(encoding="utf-8")
+        theme = (REPO / "theme.css").read_text(encoding="utf-8")
+        light_all = self.tokens(self.body(shared, ":root {"))
+        dark = self.tokens(self.body(shared, "@media (prefers-color-scheme: dark)"))
+        self.assertGreater(len(dark), 20)
+        self.assertEqual(self.tokens(self.body(theme, ':root[data-theme="dark"]')), dark)
+        self.assertEqual(self.tokens(self.body(theme, ':root[data-theme="light"]')),
+                         {k: light_all[k] for k in dark})
+
+    def test_every_page_loads_the_theme_before_drawing(self):
+        for page, js, css in (("index.html", "theme.js", "theme.css"), ("404.html", "/theme.js", "/theme.css"),
+                              ("passwords.html", "theme.js?v=", "theme.css?v=")):
+            html = (REPO / page).read_text(encoding="utf-8")
+            head = html[:html.index("</head>")]
+            with self.subTest(page=page):
+                self.assertIn('<script src="%s' % js, head)
+                tag = head[head.index('<script src="%s' % js):].split(">")[0]
+                self.assertNotIn("defer", tag)
+                self.assertNotIn("async", tag)
+                self.assertNotIn("module", tag)
+                shared = head.index("ed-ui.css")
+                self.assertLess(shared, head.index('href="%s' % css))
+
+
 if __name__ == "__main__":
     unittest.main()
