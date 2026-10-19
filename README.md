@@ -134,6 +134,14 @@ main links until it is fixed.
 **Optional:** also update "The tools" table above so the next person knows who uses
 the tool and how they sign in. The check reminds you if a tool is missing from it.
 
+### Sharing a tool
+
+Each row has a share button (the box with an arrow), for the tool's main address only. On a
+phone or tablet it opens the device's own share menu (Messages, Mail, AirDrop, Teams). On a
+computer it copies the link and shows "Link copied", ready to paste into an email or Teams.
+If copying is blocked, it opens an email with the link. Sharing a staff tool shares only its address: the person still
+needs the password, which is never in the link.
+
 ### Status on tiles
 
 - **"Not loading right now"**: for tools with `"check": true` (today Motion Voting,
