@@ -11,10 +11,10 @@
     "test:flows": "node make-site.mjs && firebase emulators:exec --only auth,firestore --project demo-mgh-ed-admin \"node --test --test-concurrency=1 flows/*.test.mjs\""
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^4.0.1",
-    "axe-core": "4.10.3",
-    "firebase": "^11.3.0",
-    "firebase-tools": "^13.29.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "axe-core": "4.13.0",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.32.1",
     "playwright-core": "1.64.1"
   }
 }
