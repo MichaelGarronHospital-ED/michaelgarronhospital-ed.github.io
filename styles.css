@@ -93,7 +93,8 @@ body { margin: 0; }
 .main { color: inherit; text-decoration: none; }
 .main::after { content: ""; position: absolute; inset: 0; }
 .main:focus-visible { outline: none; }
-.card:has(.main:focus-visible) { box-shadow: inset 0 0 0 3px var(--ed-accent); }
+/* the transparent outline shows only in Windows high contrast, which drops box-shadow */
+.card:has(.main:focus-visible) { box-shadow: inset 0 0 0 3px var(--ed-accent); outline: 2px solid transparent; outline-offset: -2px; }
 .desc { margin: 2px 0 0; font-size: var(--ed-text-sm); line-height: 1.35; color: var(--ed-ink-2); }
 
 /* share button: above the stretched main link, like .related */
@@ -141,7 +142,7 @@ body { margin: 0; }
 .related-links a::after { content: "\203A"; font-size: 17px; line-height: 1; transition: transform 0.15s ease; }
 .related-links a:hover { text-decoration: underline; }
 .related-links a:hover::after { transform: translateX(2px); }
-.related-links a:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 4px; }
+.related-links a:focus-visible { outline: 2px solid transparent; box-shadow: var(--ed-ring); border-radius: 4px; }
 
 .error { color: var(--ed-ink-2); text-align: center; }
 
@@ -155,7 +156,7 @@ body { margin: 0; }
   color: var(--ed-accent); font-size: var(--ed-text-sm); font-weight: 500; text-decoration: none;
 }
 .status-report:hover { text-decoration: underline; }
-.status-report:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 4px; }
+.status-report:focus-visible { outline: 2px solid transparent; box-shadow: var(--ed-ring); border-radius: 4px; }
 .note { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 0;
   font-size: var(--ed-text-sm); line-height: 1.35; color: var(--ed-ink); }
 .note svg { flex: none; width: 14px; height: 14px; margin-top: 2px; color: var(--ed-ink-2); }
@@ -168,7 +169,7 @@ body { margin: 0; }
   color: var(--ed-accent); text-decoration: none;
 }
 .foot a:not(.ed-btn):hover { text-decoration: underline; }
-.foot a:focus-visible { outline: none; box-shadow: var(--ed-ring); border-radius: 999px; }
+.foot a:focus-visible { outline: 2px solid transparent; box-shadow: var(--ed-ring); border-radius: 999px; }
 .foot p { margin: 0; }
 .foot-owner, .foot-address { color: var(--ed-ink-2); }        /* 7.48:1 on bg, 9.09:1 dark */
 .foot-address { margin-top: 4px; overflow-wrap: anywhere; }    /* the long address wraps on phones */
@@ -200,7 +201,7 @@ body { margin: 0; }
   color: var(--ed-ink); font-weight: 600; text-decoration: none;
 }
 .fallback:hover { background: color-mix(in srgb, var(--ed-surface) 97%, var(--ed-ink)); }
-.fallback:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--ed-accent); }
+.fallback:focus-visible { outline: 2px solid transparent; outline-offset: -2px; box-shadow: inset 0 0 0 3px var(--ed-accent); }
 
 /* ---- dark: a faint edge so the dark tiles stand off the dark card ----------- */
 /* (device dark unless light was picked, or dark picked: theme.js sets data-theme) */

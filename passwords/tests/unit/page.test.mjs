@@ -4,15 +4,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
+import { SDK_BASE } from "../../store.js";
 
 const root = new URL("../../../", import.meta.url);
 const html = readFileSync(new URL("passwords.html", root), "utf8");
-const POLICY = "default-src 'none'; script-src 'self' https://www.gstatic.com/firebasejs/10.12.2/; style-src 'self'; img-src 'self'; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
+const POLICY = "default-src 'none'; script-src 'self' https://www.gstatic.com/firebasejs/12.19.0/; style-src 'self'; img-src 'self'; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'";
 
 test("the content policy is B.6.1's, as a meta tag", () => {
   const m = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/);
   assert.ok(m);
   assert.equal(m[1].replace(/\s+/g, " "), POLICY);
+});
+
+test("the policy allows scripts from exactly the Firebase SDK folder the page loads", () => {
+  const src = POLICY.match(/script-src ([^;]+)/)[1].split(" ");
+  assert.deepEqual(src, ["'self'", SDK_BASE]);
+  assert.match(SDK_BASE, /^https:\/\/www\.gstatic\.com\/firebasejs\/\d+\.\d+\.\d+\/$/);
 });
 
 test("no inline script, no inline style, no inline handler", () => {
@@ -28,9 +35,9 @@ test("no inline script, no inline style, no inline handler", () => {
 
 test("boot.js runs first as a classic script, then theme.js, then the module; the shared look, the theme, then the page's own", () => {
   const scripts = [...html.matchAll(/<script ([^>]*)><\/script>/g)].map((m) => m[1]);
-  assert.deepEqual(scripts, ['src="passwords/boot.js?v=5"', 'src="theme.js?v=5"', 'type="module" src="passwords/app.js?v=5"']);
+  assert.deepEqual(scripts, ['src="passwords/boot.js?v=6"', 'src="theme.js?v=6"', 'type="module" src="passwords/app.js?v=6"']);
   const css = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(css, ["shared/ed-ui.css?v=5", "theme.css?v=5", "passwords/styles.css?v=5"]);
+  assert.deepEqual(css, ["shared/ed-ui.css?v=6", "theme.css?v=6", "passwords/styles.css?v=6"]);
 });
 
 test("the dashboard gear opens this page (PR B, after Alvin's phone check 2026-10-18)", () => {

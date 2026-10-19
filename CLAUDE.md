@@ -25,6 +25,12 @@ Live at https://michaelgarronhospital-ed.github.io/ (this repo's name makes it t
 `index.html` and `404.html` load it before `styles.css`. Read its header before changing it:
 copies live in the other tool repos and must stay identical.
 
+**Focus rings (2026-10-19).** A focusable control never gets `outline: none` alone: use
+`outline: 2px solid transparent` next to the `box-shadow` ring (Windows high contrast drops
+box-shadow but paints the outline). For the tool rows the outline is on
+`.card:has(.main:focus-visible)`, inset like its ring. Only a heading or container focused by
+script keeps `outline: none` (`.main:focus-visible` hands its ring to the card).
+
 **Light and dark switch (2026-10-19, Alvin).** The round moon/sun button left of the gear
 (`.theme-toggle`, `[data-theme-toggle]`) flips this repo's pages between light and dark.
 `theme.js` (plain script in `<head>` of index, 404 and passwords pages, before drawing) keeps
@@ -56,6 +62,10 @@ clicking it must never open the tool. Hidden in print. Tests: `ShareButton` in
 
 GitHub Pages from `main`, root folder. A push to `main` is live about a minute later.
 Ruleset "Protect main" blocks force-pushes and branch deletion only.
+
+`.github/dependabot.yml` (2026-10-19): monthly, one grouped pull request for the Actions (kept
+pinned by hash) and one for `passwords/tests` npm tools, releases at least 14 days old.
+Merge one only when its checks are green, like any other pull request.
 
 `.github/workflows/check.yml` (push only, any branch, no schedule) has two jobs: `check`
 (read-only token) and `save`, which runs only on `SAVE_BRANCH` (`main`) after `check` passed
@@ -118,6 +128,11 @@ README "Passwords page" explains it for people. The dashboard gear (`index.html`
   `demo-mgh-ed-admin`; hiring's emulators use 8080 / 9099 and may run at the same time.
   `passwords/tests/site*/` and `node_modules/` are git-ignored; mark `node_modules` out of
   iCloud before `npm ci`.
+- Firebase SDK: loaded from gstatic, version only in `SDK_BASE` (`passwords/store.js`) and
+  the content policy's `script-src` in `passwords.html` (a unit test keeps them equal; the
+  flows cache the files per version in `tests/site-cache/<version>/`). 12.19.0 since
+  2026-10-19. Change both by hand, bump every `?v=`, run `npm test`; Dependabot does not
+  see it.
 - `.github/workflows/passwords.yml` runs unit, rules and flows (Chrome) on changes to
   these files only. `check.yml` and `scripts/check_tools.py` do not look at this page.
 - Live Firebase (`mgh-ed-admin`): created, the account made and rules published only by
