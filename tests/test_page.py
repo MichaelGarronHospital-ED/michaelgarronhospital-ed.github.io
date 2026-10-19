@@ -108,7 +108,7 @@ class Harness:
     def __init__(self, test, browser, js=True, color_scheme="light", viewport=(1024, 800), hidden=False,
                  clock=True, clock_time="2026-10-16T12:00:00-04:00", index_html=None, tools=None,
                  tools_body=None, app_js=None, tools_get="ok", poll=False, real=False, online=True,
-                 app_get="ok", timezone="America/Toronto"):
+                 app_get="ok", timezone="America/Toronto", has_touch=False):
         self.test = test
         self.plans = {k: [200] for k in self.KEYS}
         self.requests = []          # (key, method, mode)
@@ -128,7 +128,7 @@ class Harness:
         self.app_get = app_get
         self.ctx = browser.new_context(java_script_enabled=js, color_scheme=color_scheme,
                                        viewport={"width": viewport[0], "height": viewport[1]},
-                                       timezone_id=timezone, locale="en-CA")
+                                       timezone_id=timezone, locale="en-CA", has_touch=has_touch)
         self.ctx.add_init_script(INIT % ("true" if online else "false", json.dumps("hidden" if hidden else "visible"),
                                          "true" if poll else "false"))
         self.ctx.route("**/*", self._route)
@@ -1063,6 +1063,171 @@ class ThemeSwitch:
 
 for _name in _wanted:
     _cls = type("TestTheme" + _name.capitalize(), (ThemeSwitch, unittest.TestCase), {"BROWSER": _name})
+    globals()[_cls.__name__] = _cls
+del _cls, _name
+
+
+# Replaces the browser's share sheet and clipboard, so a test decides what each does.
+# share: "ok" (records what was shared), "cancel" (AbortError), "busy" (InvalidStateError:
+# the menu is already open), "fail" (another error), "none" (no share menu, as Firefox).
+# copy: "ok", "old" (no clipboard API; the old execCommand way works) or "fail" (both blocked).
+SHARE_STUBS = """
+(() => {
+  const share = %s, copy = %s;
+  window.__shared = []; window.__copied = [];
+  if (share === "none") { delete Navigator.prototype.share; delete Navigator.prototype.canShare; }
+  else Object.defineProperty(Navigator.prototype, "share", { configurable: true, value: async (d) => {
+    window.__shared.push(d);
+    if (share === "cancel") throw new DOMException("cancelled", "AbortError");
+    if (share === "busy") throw new DOMException("already open", "InvalidStateError");
+    if (share === "fail") throw new DOMException("not allowed", "NotAllowedError");
+  } });
+  Object.defineProperty(Navigator.prototype, "clipboard", { configurable: true, get: () => ({
+    writeText: async (t) => { if (copy !== "ok") throw new Error("blocked"); window.__copied.push(t); } }) });
+  document.execCommand = (cmd) => {
+    if (copy !== "old" || cmd !== "copy") return false;
+    const a = document.activeElement;
+    window.__copied.push(a.value.slice(a.selectionStart, a.selectionEnd));
+    return true;
+  };
+})();
+"""
+
+
+class ShareButton:
+    """A share button on every tool row (app.js shareTool)."""
+    BROWSER = "chromium"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pw = sync_playwright().start()
+        cls.browser = getattr(cls.pw, cls.BROWSER).launch()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close()
+        cls.pw.stop()
+
+    def open(self, share, copy="ok", phone=True, **kw):
+        if phone:
+            kw.setdefault("viewport", (390, 800))
+        h = Harness(self, self.browser, has_touch=phone, **kw)
+        h.ctx.add_init_script(SHARE_STUBS % (json.dumps(share), json.dumps(copy)))
+        h.touch = phone
+        return h, h.open()
+
+    def hiring(self, page):
+        return page.locator('.card:has(.main:text("Physician Hiring")) .share')
+
+    def press(self, h, page):
+        """Press Physician Hiring's share button (a tap on a touch screen) and let the 50 ms message delay pass."""
+        b = self.hiring(page)
+        b.tap() if h.touch else b.click()
+        h.tick(100, step=50)
+
+    def message(self, page):
+        t = page.locator("#share-toast")
+        return t.text_content() if page.locator("#share-toast.show").count() else None
+
+    def test_every_row_has_one_named_share_button(self):
+        h, page = self.open("ok", phone=False)
+        names = page.eval_on_selector_all(".card", "cs => cs.map(c => [c.querySelector('.main').textContent, "
+                                          "c.querySelectorAll('.share').length, c.querySelector('.share').getAttribute('aria-label'), "
+                                          "c.querySelector('.share').title, c.querySelector('.share').type])")
+        self.assertEqual(len(names), len(FIXTURE))
+        for name, count, label, title, kind in names:
+            self.assertEqual((count, label, title, kind), (1, "Share " + name, "Share link", "button"))
+        t = page.locator("#share-toast")
+        self.assertEqual((t.get_attribute("role"), t.text_content()), ("status", ""), "the message box waits empty")
+        h.assert_clean()
+
+    def test_phone_share_menu_gets_the_main_address(self):
+        h, page = self.open("ok")
+        self.press(h, page)
+        self.assertEqual(page.evaluate("window.__shared"),
+                         [{"title": "Physician Hiring", "url": tool(FIXTURE, "Physician Hiring")["url"]}])
+        self.assertEqual(page.url, SITE + "/", "the share button does not open the tool")
+        self.assertEqual((page.evaluate("window.__copied"), self.message(page)), ([], None))
+        h.assert_clean()
+
+    def test_phone_cancel_or_menu_already_open_does_nothing(self):
+        for share in ("cancel", "busy"):
+            with self.subTest(share=share):
+                h, page = self.open(share)
+                self.press(h, page)
+                self.assertEqual(len(page.evaluate("window.__shared")), 1)
+                self.assertEqual((page.evaluate("window.__copied"), self.message(page), page.url), ([], None, SITE + "/"))
+                h.assert_clean()
+                h.close()
+
+    def test_phone_share_error_copies_instead(self):
+        h, page = self.open("fail")
+        self.press(h, page)
+        self.assertEqual(page.evaluate("window.__copied"), [tool(FIXTURE, "Physician Hiring")["url"]])
+        self.assertEqual(self.message(page), "Link copied")
+        h.assert_clean()
+
+    def test_computer_copies_even_with_a_share_menu(self):
+        for share in ("ok", "none"):
+            with self.subTest(share=share):
+                h, page = self.open(share, phone=False)
+                self.press(h, page)
+                self.assertEqual(page.evaluate("window.__shared"), [])
+                self.assertEqual(page.evaluate("window.__copied"), [tool(FIXTURE, "Physician Hiring")["url"]])
+                self.assertEqual(self.message(page), "Link copied")
+                h.tick(3000)
+                self.assertEqual(self.message(page), None, "the message goes away")
+                self.press(h, page)
+                self.assertEqual(self.message(page), "Link copied", "a second press says it again")
+                h.assert_clean()
+                h.close()
+
+    def test_old_way_copy_keeps_the_place_and_focus(self):
+        h, page = self.open("none", copy="old", phone=False, viewport=(1024, 400))
+        page.evaluate("window.scrollTo(0, 120)")
+        self.hiring(page).focus()
+        y = page.evaluate("window.scrollY")
+        page.keyboard.press("Enter")
+        h.tick(100, step=50)
+        self.assertEqual(page.evaluate("window.__copied"), [tool(FIXTURE, "Physician Hiring")["url"]])
+        self.assertEqual(page.evaluate("window.scrollY"), y, "the page does not jump")
+        self.assertEqual(page.evaluate("document.activeElement.getAttribute('aria-label')"), "Share Physician Hiring")
+        self.assertEqual(page.locator("textarea").count(), 0)
+        self.assertEqual(self.message(page), "Link copied")
+        h.assert_clean()
+
+    def test_copy_blocked_opens_an_email(self):
+        h, page = self.open("none", copy="fail", phone=False)
+        page.evaluate("""() => { window.__mail = null;
+          document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[href^="mailto:"]');
+            if (a) { window.__mail = a.href; e.preventDefault(); } }, true); }""")
+        self.press(h, page)
+        page.wait_for_function("window.__mail !== null")
+        mail = page.evaluate("window.__mail")
+        self.assertEqual(self.message(page), None)
+        self.assertEqual(page.locator("body > a.sr-only").count(), 0, "the helper link is removed")
+        self.assertTrue(mail.startswith("mailto:?subject=Physician%20Hiring&body="), mail)
+        self.assertIn(urllib.parse.quote(tool(FIXTURE, "Physician Hiring")["url"], safe=""), mail)
+        h.close()
+
+    def test_phone_rows_fit_with_the_button(self):
+        for width in (320, 375):
+            with self.subTest(width=width):
+                h, page = self.open("ok", viewport=(width, 800))
+                r = page.evaluate("""() => {
+                  const doc = document.documentElement, out = { scroll: doc.scrollWidth - doc.clientWidth, small: [], over: [] };
+                  for (const c of document.querySelectorAll('.card')) {
+                    const b = c.querySelector('.share').getBoundingClientRect(), row = c.querySelector('.card-row').getBoundingClientRect();
+                    if (b.width < 44 || b.height < 44) out.small.push(b.width + 'x' + b.height);
+                    if (b.right > row.right + 0.5) out.over.push(c.querySelector('.main').textContent);
+                  }
+                  return out; }""")
+                self.assertEqual((r["scroll"], r["small"], r["over"]), (0, [], []))
+                h.close()
+
+
+for _name in _wanted:
+    _cls = type("TestShare" + _name.capitalize(), (ShareButton, unittest.TestCase), {"BROWSER": _name})
     globals()[_cls.__name__] = _cls
 del _cls, _name
 

@@ -133,6 +133,94 @@ function relatedBlock(related, links, toolName) {
   return box;
 }
 
+// ---- Share (Alvin, 2026-10-19) ----------------------------------------------
+// Each row has a share button for the tool's main address (never a related link).
+// Phones and tablets (a touch screen as the main pointer) open the device's own share
+// menu (Messages, Mail, AirDrop, Teams); cancelling it, or pressing again while it is
+// open, does nothing. Computers copy the link and say "Link copied" (a Windows PC's share
+// window has little use on a hospital computer). If copying is blocked too, an email
+// opens with the link in it.
+const SHARE_ICON = ["M12 3v12", "M7.5 7.5 12 3l4.5 4.5", "M8 11H6.5A1.5 1.5 0 0 0 5 12.5v6A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-6a1.5 1.5 0 0 0-1.5-1.5H16"];
+
+function shareButton(tool) {
+  const b = el("button", "share");
+  b.type = "button";
+  b.setAttribute("aria-label", "Share " + tool.name);
+  b.title = "Share link";
+  const svg = icon(SHARE_ICON);
+  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", width: "20", height: "20", "stroke-width": "1.8" })) svg.setAttribute(k, v);
+  b.append(svg);
+  b.addEventListener("click", () => shareTool(tool, b));
+  return b;
+}
+
+function touchFirst() {
+  try { return window.matchMedia("(pointer: coarse)").matches; } catch { return false; }
+}
+
+// The old way, for browsers without the clipboard API: a hidden box at the top of the
+// screen (so the page never scrolls to it), selected the way iOS accepts, then focus
+// goes back to the button.
+async function copyLink(url, button) {
+  try { await navigator.clipboard.writeText(url); return true; } catch { /* blocked or missing: try the old way */ }
+  try {
+    const box = el("textarea", "copy-box");
+    box.value = url;
+    box.setAttribute("readonly", "");
+    box.setAttribute("aria-hidden", "true");
+    box.tabIndex = -1;
+    document.body.append(box);
+    box.focus({ preventScroll: true });
+    box.setSelectionRange(0, url.length);
+    const ok = document.execCommand("copy");
+    box.remove();
+    button.focus({ preventScroll: true });
+    return ok;
+  } catch { return false; }
+}
+
+// One message box, made empty when the tiles are drawn, so screen readers announce each
+// new message (a status box that appears already filled is often not read).
+let toastTimer = 0;
+function toastBox() {
+  let t = document.getElementById("share-toast");
+  if (!t) {
+    t = el("div", "ed-toast share-toast");
+    t.id = "share-toast";
+    t.setAttribute("role", "status");
+    document.body.append(t);
+  }
+  return t;
+}
+function toast(text) {
+  const t = toastBox();
+  t.textContent = "";
+  clearTimeout(toastTimer);
+  setTimeout(() => {
+    t.textContent = text;
+    t.classList.add("show");
+    toastTimer = setTimeout(() => { t.classList.remove("show"); t.textContent = ""; }, 2500);
+  }, 50);
+}
+
+async function shareTool(tool, button) {
+  const data = { title: tool.name, url: tool.url };
+  if (touchFirst() && typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare(data))) {
+    try { await navigator.share(data); } catch (e) {
+      // cancelled, or the menu is already open: nothing to do. Anything else: copy instead.
+      if (e && (e.name === "AbortError" || e.name === "InvalidStateError")) return;
+      if (await copyLink(tool.url, button)) toast("Link copied");
+    }
+    return;
+  }
+  if (await copyLink(tool.url, button)) { toast("Link copied"); return; }
+  const mail = el("a", "sr-only");   // a real link, clicked, opens the mail app like any mailto link
+  mail.href = "mailto:?subject=" + encodeURIComponent(tool.name) + "&body=" + encodeURIComponent(tool.name + ", MGH Emergency Department: " + tool.url);
+  document.body.append(mail);
+  mail.click();
+  mail.remove();
+}
+
 function card(tool) {
   const li = el("li");
   const card = el("article", "card");
@@ -163,7 +251,7 @@ function card(tool) {
   const chev = el("span", "chev");
   chev.setAttribute("aria-hidden", "true");
 
-  row.append(icn, text, chev);
+  row.append(icn, text, shareButton(tool), chev);
   card.append(row);
   const links = usableLinks(tool.related);
   if (links.length) card.append(relatedBlock(tool.related, links, tool.name));
@@ -207,6 +295,7 @@ function render(tools) {
     return section;
   });
   root.replaceChildren(...sections);
+  toastBox();   // empty and waiting, so the first "Link copied" is announced
 }
 
 function showLoadError() {

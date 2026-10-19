@@ -41,6 +41,17 @@ needs both selectors (see `.icon`). The button starts `hidden` and theme.js show
 never appears dead without JavaScript. At 320px the hospital name drops to its own line.
 Tests: `ThemeSwitch` in `tests/test_page.py`.
 
+**Share button (2026-10-19, Alvin).** Every row has `.share` (app.js `shareButton`,
+`shareTool`) for the tool's main `url`, never a `related` link. Touch-first devices
+(`pointer: coarse`) use `navigator.share` (cancel or "already open" does nothing; another
+error copies instead); computers always copy (a Windows share window is little use on a
+hospital PC) and say "Link copied" in `#share-toast`, which is made empty when the tiles are
+drawn so screen readers announce it; if copying is blocked, a clicked `mailto:` link. The
+old-way copy box (`.copy-box`) sits fixed at the top so the page never scrolls, and focus
+returns to the button. It sits above the stretched main link (`z-index: 1`), like `.related`;
+clicking it must never open the tool. Hidden in print. Tests: `ShareButton` in
+`tests/test_page.py` (share sheet and clipboard stubbed).
+
 ## Deploy
 
 GitHub Pages from `main`, root folder. A push to `main` is live about a minute later.
