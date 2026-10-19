@@ -114,6 +114,12 @@ README "Passwords page" explains it for people. The dashboard gear (`index.html`
   `js/passwords.js`, which was deleted in R10, so there is nothing left to keep it in step
   with; its words were last tidied in the UX pass (2026-10-18: shorter intro and hint, no
   sign-in lead line). Show and Copy on each row are icon buttons with hover text (app.js).
+- Log out follows the ED tools' Log out standard (2026-10-19): `#logout` is the last item
+  in the header, `ed-btn ed-btn-plain`, and reads "Logging out…" (disabled) while it works
+  (app.js `onLogout`); the gate then says "You are logged out." in grey. It can't run during
+  a change (the dialog makes the header inert; `running` is checked too). Messages about
+  sessions say "logged out"; code names (`signOut`, `"signed-out"`) stay. Tests: page.test.mjs
+  (words and button) and flow 12b.
 - Content policy is in `passwords.html` (B.6.1, a test pins it): no inline script, no
   inline style, no `style=` or `on...=` attribute, even inside JS strings. Every `?v=` in
   `passwords/` and `passwords.html` is equal; bump them together.

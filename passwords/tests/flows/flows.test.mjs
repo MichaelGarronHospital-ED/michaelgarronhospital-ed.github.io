@@ -384,7 +384,7 @@ for (const kind of H.browsersToRun()) {
       await finish(a); await finish(b);
     });
 
-    it("12 gate: 3 wrong, then 30 s; the ED password is refused; idle 10 minutes and 5 minutes hidden sign out", T, async () => {
+    it("12 gate: 3 wrong, then 30 s; the ED password is refused; idle 10 minutes and 5 minutes hidden log out", T, async () => {
       await H.reset(); await H.seedVault(CUR);
       const p = await open({ clock: true });
       for (let i = 0; i < 3; i++) {
@@ -410,6 +410,43 @@ for (const kind of H.browsersToRun()) {
       await p.evaluate(() => window.__setHidden(true));
       await p.clock.fastForward("05:10");
       await p.waitForFunction((t) => document.querySelector("#gerr") && document.querySelector("#gerr").textContent === t, TEXT.hiddenOut, { timeout: 30000 });
+      await finish(p);
+    });
+
+    it("12b Log out (the ED tools standard): not while a change runs; then Logging out..., disabled, and the gate says You are logged out.", T, async () => {
+      await H.reset(); await H.seedVault(CUR);
+      const p = await signedIn();
+      assert.equal(await p.textContent("#logout"), "Log out");
+      // a change running: the header is inert and even a scripted press does nothing
+      await H.rowButton(p, "ed", "change").click();
+      await H.waitDialog(p, "New ED password");
+      let release; const held = new Promise((r) => { release = r; });
+      let holding = false;
+      p.__intercept = async (route, req) => {
+        if (holding || !req.url().includes("accounts:update")) return false;
+        holding = true; await held; return false;
+      };
+      await H.saveNew(p, V.ed2);
+      await H.waitDialog(p, "Changing the ED password");
+      await p.waitForFunction(() => document.querySelector(".pw-steps .is-now"));
+      assert.equal(await p.evaluate(() => document.querySelector("#top").inert), true, "Log out can be pressed during a change");
+      const during = await p.evaluate(() => { const b = document.querySelector("#logout"); b.click(); return [b.disabled, b.textContent]; });
+      assert.deepEqual(during, [false, "Log out"], "a scripted Log out during a change did something");
+      await H.sleep(500);
+      assert.equal(await H.dialogTitle(p), "Changing the ED password");
+      release();
+      await H.waitDialog(p, "Done");
+      await H.dialogClick(p, "Close");
+      await accepts("ed", V.ed2);
+      // now it works: the button says so at once, then the gate
+      assert.equal(await p.evaluate(() => document.querySelector("#top").inert), false);
+      const pressed = await p.evaluate(() => { const b = document.querySelector("#logout"); b.click(); return [b.disabled, b.textContent]; });
+      assert.deepEqual(pressed, [true, "Logging out…"]);
+      await p.waitForFunction((t) => document.querySelector("#gerr") && document.querySelector("#gerr").textContent === t, TEXT.loggedOut, { timeout: 30000 });
+      assert.equal(await p.getAttribute("#gerr", "class"), "pw-msg is-busy", "not a grey line");
+      assert.equal(await p.isVisible("#gate"), true);
+      assert.equal(await p.isVisible("#top"), false);
+      assert.equal(await p.textContent("#logout"), "Log out");
       await finish(p);
     });
 

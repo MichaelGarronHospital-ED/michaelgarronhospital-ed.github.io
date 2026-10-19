@@ -228,7 +228,7 @@ the Patient Hub statistics page always end up with the same three passwords.
 - One sign-in page in this repo: `passwords.html` with `passwords/`. Plain files, no build.
 - The **Admin** password was called "Leadership" until 2026-10-18. Only the words people
   see changed: the account emails (`leadership@...`), the key `admin:leadership` and the
-  saved copy still say `leadership`, so nobody was signed out and the saved copy still opens.
+  saved copy still say `leadership`, so nobody was logged out and the saved copy still opens.
 - It signs in to one account, `leadership@mgh-ed-admin.invalid`, in its own free Firebase
   project **`mgh-ed-admin`** ("MGH ED Admin", Spark plan, Firestore in Montreal). That
   project holds one document, `vault/main`: the three passwords, **encrypted in the
@@ -239,7 +239,7 @@ the Patient Hub statistics page always end up with the same three passwords.
   memory-only helper. It never reads or writes Physician Hiring's or Motion Voting's data.
 - **No password is ever in this repo**, in a test, or in a log. The sign-in lasts while
   the tab is open; a reload, Log out, 10 minutes without use or 5 minutes in the
-  background signs out.
+  background logs out.
 - **Never delete the `mgh-ed-admin` account.** The rules, `passwords/config.js` and the
   Patient Hub statistics check (`functions/lib/leadership.js`, `ADMIN_UID`) know it by its
   uid; a new account gets a new uid and the page and statistics refuse it until all three

@@ -37,8 +37,8 @@
 //  `store` is store.js (read, write); the tests pass a fake.
 // ============================================================================
 
-import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=6";
-import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=6";
+import { ACCOUNTS as CONFIG_ACCOUNTS, ADMIN_FIREBASE, CONFIGS } from "./config.js?v=7";
+import { makeLock, seal, openVault, openWithLocks, withoutNext } from "./vault.js?v=7";
 
 export const ROLES = Object.freeze(["leadership", "ed", "guest"]);
 export const ROLE_WORD = Object.freeze({ leadership: "Admin", ed: "ED", guest: "Guest" });
@@ -771,7 +771,7 @@ export function makeFirebaseAdapter(sdk, { mainAuth, configs = CONFIGS, connect 
       if (!a.uid) throw fail("not-set-up", "This page is not ready yet.");
       if (a.main) {
         const user = mainAuth && mainAuth.currentUser;
-        if (!user || user.uid !== a.uid) throw fail("signed-out", "You were signed out.");
+        if (!user || user.uid !== a.uid) throw fail("signed-out", "You were logged out.");
         await sdk.reauthenticateWithCredential(user, sdk.EmailAuthProvider.credential(user.email || a.email, password));
         return { main: true, user };
       }
@@ -848,7 +848,7 @@ export const TEXT = Object.freeze({
   recovery: "The saved copy was made with an older Admin password. Type the ED and Guest passwords in use now to make a new copy.",
   refusedDoc: "The saved copy can't be opened. Type the ED and Guest passwords in use now to make a new copy.",
   changedElsewhere: "This was just changed on another device. Here is the latest.",
-  signedOut: "You were signed out, probably because a password changed.",
+  signedOut: "You were logged out, probably because a password changed.",
   hint: "At least 6 characters. Three or four words work well. Not one in use now.",
   keepOpen: "Keep this page open until it says Done.",
   tellPeople: "Tell people in person or by phone. Never email a password.",
@@ -858,9 +858,9 @@ export const TEXT = Object.freeze({
   frame: "Open this page on its own.",
   typedEarlier: "You typed this earlier on this page. Choose a different new password.",
   notReady: "This page is not ready yet. Ask the person who looks after the ED tools to finish setting it up.",
-  idleOut: "You were signed out because the page was not used for 10 minutes. Sign in again to go on.",
-  hiddenOut: "You were signed out because the page was in the background for 5 minutes. Sign in again to go on.",
-  loggedOut: "You are signed out.",
+  idleOut: "You were logged out after 10 minutes without use. Log in again to go on.",
+  hiddenOut: "You were logged out after 5 minutes with the page in the background. Log in again to go on.",
+  loggedOut: "You are logged out.",
   sameInUse: "Two of the passwords you typed are the same. The Admin, ED and Guest passwords must all be different. Check each was typed right. If two tools really use the same one, ask the person who looks after the ED tools.",
   brokenCopy: "The saved copy can't be opened or replaced from this page. Ask the person who looks after the ED tools.",
   noConnection: "Couldn't reach the sign-in service. Check the connection and try again.",
