@@ -37,7 +37,15 @@
     "color": "indigo",
     "repo": "https://github.com/MichaelGarronHospital-ED/mgh-ed-hiring",
     "owner": "ED Administration",
-    "check": true
+    "check": true,
+    "related": {
+      "links": [
+        {
+          "name": "Admin console",
+          "url": "https://michaelgarronhospital-ed.github.io/mgh-ed-hiring/#admin"
+        }
+      ]
+    }
   },
   {
     "name": "CPOE Order Review",

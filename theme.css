@@ -1,0 +1,71 @@
+/* theme.css - light or dark by choice, for this repo's pages only (front page, passwords
+ * page, page not found). Loaded right after shared/ed-ui.css.
+ *
+ * The shared look follows the device (ed-ui.css). The switch beside the gear on the front
+ * page (theme.js) sets <html data-theme="light|dark"> when someone picks the other look;
+ * these rules then win over the device's, because :root[data-theme] is more specific than
+ * ed-ui.css's :root. Screen only: print stays light (ed-ui.css's print block).
+ *
+ * The values are ed-ui.css's own: the light block repeats its :root values for every token
+ * its dark block changes, and the dark block repeats that dark block. A test
+ * (tests/test_check_tools.py, ThemeTokens) fails if either drifts from ed-ui.css, so change
+ * a colour in ed-ui.css first, then here. Never add a token that ed-ui.css does not have.
+ */
+
+@media screen {
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --ed-bg: #f5f5f7;
+    --ed-surface: #ffffff;
+    --ed-surface-2: #f2f2f7;
+    --ed-fill: #e8e8ed;
+    --ed-seg-track: #e8e8ed;
+    --ed-seg-on: #ffffff;
+    --ed-ink: #1d1d1f;
+    --ed-ink-2: #4f4f54;
+    --ed-line: #d2d2d7;
+    --ed-line-soft: #e5e5ea;
+    --ed-accent: #0052a3;
+    --ed-accent-press: #00427f;
+    --ed-accent-tint: #eaf2fc;
+    --ed-accent-ink: #00478f;
+    --ed-on-accent: #ffffff;
+    --ed-green: #0e5e27;   --ed-green-tint: #eaf6ee;
+    --ed-amber: #6b4600;   --ed-amber-tint: #fdf4e4;
+    --ed-red: #9c000d;     --ed-red-tint: #fdeeee;
+    --ed-purple: #3f3db8;  --ed-purple-tint: #f0f0fd;
+    --ed-toast-bg: #1d1d1f;
+    --ed-toast-ink: #f5f5f7;
+    --ed-shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 4px 16px rgba(0, 0, 0, .04);
+    --ed-shadow-lg: 0 8px 32px rgba(0, 0, 0, .12);
+    --ed-ring: 0 0 0 4px rgba(0, 82, 163, .32);
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ed-bg: #000000;
+    --ed-surface: #1c1c1e;
+    --ed-surface-2: #2c2c2e;
+    --ed-fill: #3a3a3c;
+    --ed-seg-track: #2c2c2e;
+    --ed-seg-on: #48484a;
+    --ed-ink: #f5f5f7;
+    --ed-ink-2: #bdbdc2;
+    --ed-line: #3a3a3c;
+    --ed-line-soft: #2c2c2e;
+    --ed-accent: #7dbdff;
+    --ed-accent-press: #a3d0ff;
+    --ed-accent-tint: #0d2a47;
+    --ed-accent-ink: #7dbdff;
+    --ed-on-accent: #000000;
+    --ed-green: #6fd08c;   --ed-green-tint: #0f2d19;
+    --ed-amber: #ffc061;   --ed-amber-tint: #33270d;
+    --ed-red: #ffa8a4;     --ed-red-tint: #3a1414;
+    --ed-purple: #b4b2ff;  --ed-purple-tint: #24234a;
+    --ed-toast-bg: #f5f5f7;
+    --ed-toast-ink: #1d1d1f;
+    --ed-shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+    --ed-shadow-lg: 0 0 0 1px rgba(255, 255, 255, .08), 0 8px 32px rgba(0, 0, 0, .6);
+    --ed-ring: 0 0 0 4px rgba(125, 189, 255, .4);
+  }
+}

@@ -25,6 +25,22 @@ Live at https://michaelgarronhospital-ed.github.io/ (this repo's name makes it t
 `index.html` and `404.html` load it before `styles.css`. Read its header before changing it:
 copies live in the other tool repos and must stay identical.
 
+**Light and dark switch (2026-10-19, Alvin).** The round moon/sun button left of the gear
+(`.theme-toggle`, `[data-theme-toggle]`) flips this repo's pages between light and dark.
+`theme.js` (plain script in `<head>` of index, 404 and passwords pages, before drawing) keeps
+the choice in `localStorage` `ed_theme` and sets `<html data-theme>`; a choice stays until
+the person presses the switch again (never cleared by the device changing at sunset);
+pressing it back to the device's own look clears it, so the page follows the device again.
+On the passwords page it loads as `theme.js?v=<n>` with that page's version: bump them all
+when theme.js or theme.css change (`passwords.yml` runs on both files). `theme.css` (after `ed-ui.css`)
+repeats ed-ui.css's light and dark token values under `:root[data-theme]`, screen only (print
+stays light); `ThemeTokens` in `tests/test_check_tools.py` fails if they drift, so change a
+colour in `shared/ed-ui.css` first, then `theme.css`. Kept out of `shared/` on purpose: the
+other tools still follow the device and need no release. Anything dark-only in `styles.css`
+needs both selectors (see `.icon`). The button starts `hidden` and theme.js shows it, so it
+never appears dead without JavaScript. At 320px the hospital name drops to its own line.
+Tests: `ThemeSwitch` in `tests/test_page.py`.
+
 ## Deploy
 
 GitHub Pages from `main`, root folder. A push to `main` is live about a minute later.
