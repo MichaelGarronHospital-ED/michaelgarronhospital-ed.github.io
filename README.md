@@ -40,6 +40,7 @@ No framework, no build step, no dependencies. Open the files in any editor.
 | `scripts/check_tools.py` | The check. Finds mistakes in `tools.json` (missing comma, misspelt colour, missing icon, a password in a link) and writes the plain list in `index.html`. Runs by itself on GitHub after every save; also `python3 scripts/check_tools.py` on a computer. |
 | `tests/` | Tests for the check (`test_check_tools.py`) and for the page in a real browser (`test_page.py`). They use a frozen copy of the tool list in `tests/fixtures/`, so changing the real `tools.json` never breaks them; do not update the fixture when you change a tool. Not part of the page. |
 | `.github/workflows/check.yml` | Runs the check after each save on GitHub (about 15 seconds, free for this public repo, no schedule). The check itself can only read. On `main` only, a second small job then saves the updated plain list itself. |
+| `.github/dependabot.yml` | Once a month, GitHub suggests updates for the workflow actions and the passwords page's test tools, as at most one pull request each. Merge one only when its checks are green. |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are. |
 
 ### Add, rename or remove a tool (on the GitHub website, no coding)
@@ -276,7 +277,7 @@ the Patient Hub statistics page always end up with the same three passwords.
 | `passwords/app.js` | Sign-in, the three rows and the dialogs. |
 | `passwords/core.js` | Every rule of a change (a port of Physician Hiring's `js/passwords.js`) and every message. |
 | `passwords/vault.js` | The encryption. |
-| `passwords/store.js` | Reads the vault once, writes it in a way that notices another device's change. |
+| `passwords/store.js` | Reads the vault once, writes it in a way that notices another device's change. Also names the Firebase version the page loads (`SDK_BASE`, 12.19.0); the content policy in `passwords.html` names the same one. |
 | `passwords/util.js`, `passwords/styles.css` | Helpers and layout (only the shared `--ed-*` look). |
 | `passwords/config.js` | Public web configs and the six accounts (emails and uids). No password. |
 | `passwords/vault-cli.mjs` | For the maintainer's `set-passwords.py`: seals and checks the vault from a terminal. |

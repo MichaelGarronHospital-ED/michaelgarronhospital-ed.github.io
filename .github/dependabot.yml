@@ -1,0 +1,39 @@
+# Dependabot: once a month, at most one pull request per kind of dependency.
+#
+# - github-actions: the actions in .github/workflows. They stay pinned by commit
+#   hash; Dependabot moves the hash and the "# vX.Y.Z" comment together.
+# - npm in passwords/tests: the passwords page's dev-only test tools (the page
+#   itself has no npm dependencies; its Firebase SDK version is SDK_BASE in
+#   passwords/store.js plus the content policy in passwords.html, changed by hand).
+#
+# Every update of one kind comes as ONE grouped pull request. The "Passwords page"
+# workflow runs on the npm one (and on the Actions one through its own file), so
+# check it is green before merging. A release must be 14 days old before it is
+# offered (cooldown), so a brand new major version is never picked up the day it ships.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 14
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "Actions"
+
+  - package-ecosystem: npm
+    directory: "/passwords/tests"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 14
+    groups:
+      passwords-test-tools:
+        patterns: ["*"]
+    commit-message:
+      prefix: "Passwords tests"
