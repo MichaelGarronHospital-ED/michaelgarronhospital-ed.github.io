@@ -44,8 +44,16 @@ stays light); `ThemeTokens` in `tests/test_check_tools.py` fails if they drift, 
 colour in `shared/ed-ui.css` first, then `theme.css`. Kept out of `shared/` on purpose: the
 other tools still follow the device and need no release. Anything dark-only in `styles.css`
 needs both selectors (see `.icon`). The button starts `hidden` and theme.js shows it, so it
-never appears dead without JavaScript. At 320px the hospital name drops to its own line.
+never appears dead without JavaScript. At 320px "Emergency Department" drops to its own line.
 Tests: `ThemeSwitch` in `tests/test_page.py`.
+
+**Hospital logo (2026-10-19, Alvin).** The header of `index.html` and `404.html` starts with
+the MGH / Toronto East Health Network logo, inline SVG (`.brand-logo`, `role="img"`, named
+in `aria-label`), the same artwork as Patient Hub's `Website/src/assets/images/mgh-logo.svg`
+with its no-op mask and offsets removed. Inline on purpose: the grey lettering is
+`currentColor` (`#404041` light, `--ed-ink` dark) so it stays readable in dark mode; the
+two greens are the brand's. Then "Emergency Department" (`.brand-dept`) after a thin rule.
+The passwords page keeps its ED badge (its own release and content policy).
 
 **Share button (2026-10-19, Alvin).** Every row has `.share` (app.js `shareButton`,
 `shareTool`) for the tool's main `url`, never a `related` link. Touch-first devices
